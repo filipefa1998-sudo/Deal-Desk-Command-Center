@@ -1,0 +1,809 @@
+<title>Deal Desk Command Center</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: control-room console. Sticky command bar, KPI scoreboard, then one working view at a time (flow board, ledger, bottleneck radar, exception library, impact report). Detail lives in a right-hand drawer. */
+:root{
+  --ink:#0A0F1D; --panel:#111A2C; --panel2:#17223A; --line:#223050; --line2:#33446C;
+  --fg:#E9EEF8; --muted:#8E9AB6; --faint:#5F6C8B;
+  --signal:#FF8A3D; --signal-ink:#1C0F05; --signal-soft:rgba(255,138,61,.14);
+  --desk:#FF8A3D; --reviewer:#5AB8FF; --requestor:#B892FF;
+  --ok:#3DDC97; --warn:#FFC857; --crit:#FF5C7A;
+  --ok-soft:rgba(61,220,151,.13); --warn-soft:rgba(255,200,87,.14); --crit-soft:rgba(255,92,122,.15);
+  --glow:rgba(90,184,255,.10);
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--ink)}
+body{color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5;min-height:100vh;
+  background:radial-gradient(1200px 500px at 85% -10%,var(--glow),transparent 60%),radial-gradient(900px 400px at -10% 0%,var(--signal-soft),transparent 55%),var(--ink);background-attachment:fixed}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--ink)}
+.wrap{max-width:1400px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-radius:6px}
+.num,.mono{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono)}
+
+/* Command bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:rgba(10,15,29,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.topin{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:38px;height:38px;flex:none}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-stretch:72%;font-weight:800;font-size:24px;line-height:1;margin:2px 0 0;letter-spacing:.01em;text-transform:uppercase}
+h1 em{font-style:normal;color:var(--signal)}
+.topact{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.live{display:inline-flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding:0 6px}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:pulse 2.4s infinite}
+.scan{height:2px;background:linear-gradient(90deg,transparent,var(--signal),var(--reviewer),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:scan 5s linear infinite;opacity:.8}
+@keyframes scan{from{background-position:-40% 0}to{background-position:140% 0}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,220,151,.55)}70%{box-shadow:0 0 0 9px rgba(61,220,151,0)}100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}}
+
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);padding:8px 14px;font-weight:600;font-size:13px;transition:transform .15s,background .15s,border-color .15s,box-shadow .2s}
+.btn:hover{transform:translateY(-1px);border-color:var(--faint)}
+.btn.primary{background:var(--signal);color:var(--signal-ink);border-color:var(--signal);box-shadow:0 6px 24px -8px var(--signal)}
+.btn.primary:hover{box-shadow:0 10px 30px -8px var(--signal)}
+.btn.ghost{background:transparent}
+.btn.danger{border-color:var(--crit);color:var(--crit);background:transparent}
+.btn.danger.solid{background:var(--crit);color:var(--ink)}
+.btn.big{padding:12px 18px;font-size:14px;width:100%;justify-content:center}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+kbd{font-family:var(--f-mono);font-size:10px;border:1px solid currentColor;border-radius:4px;padding:0 4px;opacity:.7}
+
+main{padding-block:20px 60px;display:flex;flex-direction:column;gap:18px}
+
+.banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px dashed var(--line2);border-radius:12px;padding:10px 14px;color:var(--muted);font-size:13px}
+.banner b{color:var(--fg)}
+
+/* KPI scoreboard */
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.kpi{background:var(--panel);padding:16px 18px 14px;display:flex;flex-direction:column;gap:4px;min-width:0;position:relative}
+.kpi .lab{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px}
+.kpi .lab i{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+.kpi .lab i.ok{background:var(--ok)} .kpi .lab i.warn{background:var(--warn)} .kpi .lab i.crit{background:var(--crit)}
+.kpi .val{font-family:var(--f-display);font-stretch:68%;font-weight:800;font-size:40px;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi .val small{font-size:.5em;color:var(--muted);font-weight:600;margin-left:3px}
+.kpi .sub{font-size:12px;color:var(--muted)}
+.kpi:first-child .val{color:var(--signal)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:0;padding:10px 14px;font-weight:600;color:var(--muted);position:relative;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.tab .n{font-family:var(--f-mono);font-size:11px;color:var(--faint)}
+.tab::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--signal);transform:scaleX(0);transition:transform .25s}
+.tab[aria-selected="true"]{color:var(--fg)}
+.tab[aria-selected="true"]::after{transform:scaleX(1)}
+.tab:hover{color:var(--fg)}
+
+/* Board */
+.board-wrap{overflow-x:auto;padding-bottom:8px;margin-inline:-4px}
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(232px,1fr);gap:10px;padding:4px;min-width:min-content}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;min-height:280px;min-width:0}
+.col>header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:12px 12px 10px;border-bottom:1px solid var(--line)}
+.cname{display:block;font-family:var(--f-display);font-stretch:75%;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.02em}
+.cdept{display:block;font-size:11px;color:var(--muted)}
+.ccount{font-family:var(--f-mono);font-size:12px;background:var(--panel2);border:1px solid var(--line2);border-radius:999px;padding:1px 9px}
+.col.hot>header .ccount{background:var(--crit-soft);border-color:var(--crit);color:var(--crit)}
+.cards{display:flex;flex-direction:column;gap:8px;padding:10px}
+.empty{color:var(--faint);font-size:12px;text-align:center;margin:16px 0}
+.card{text-align:left;background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:10px 11px;display:flex;flex-direction:column;gap:6px;transition:transform .15s,border-color .15s,box-shadow .2s;width:100%}
+.card:hover{transform:translateY(-2px);border-color:var(--signal);box-shadow:0 10px 24px -14px var(--signal)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.code{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.acct{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.meta{font-size:12px;color:var(--muted)}
+.chip{font-family:var(--f-mono);font-size:11px;border-radius:999px;padding:1px 8px;border:1px solid;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip.ok{color:var(--ok);border-color:rgba(61,220,151,.4);background:var(--ok-soft)}
+.chip.warn{color:var(--warn);border-color:rgba(255,200,87,.45);background:var(--warn-soft)}
+.chip.crit{color:var(--crit);border-color:rgba(255,92,122,.5);background:var(--crit-soft)}
+.chip.mute{color:var(--muted);border-color:var(--line2)}
+.who{font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.who::before{content:"";width:7px;height:7px;border-radius:2px;background:currentColor}
+.who.desk{color:var(--desk)} .who.reviewer{color:var(--reviewer)} .who.requestor{color:var(--requestor)}
+.abar{height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+.abar i{display:block;height:100%;background:var(--ok);border-radius:4px}
+
+/* Panels */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.span2{grid-column:1/-1}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}
+.panel h3{font-family:var(--f-display);font-stretch:75%;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.02em;margin:0;text-wrap:balance}
+.panel .ph{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.panel .note{color:var(--muted);font-size:12px;margin:0}
+.insight{margin-top:14px;padding:10px 12px;border-radius:10px;background:var(--signal-soft);border:1px solid rgba(255,138,61,.35);font-size:13px}
+.insight b{color:var(--signal)}
+
+.sbar{display:grid;grid-template-columns:110px minmax(0,1fr) 56px;align-items:center;gap:10px;padding:5px 0}
+.sl{font-size:13px;color:var(--muted)}
+.track{position:relative;height:14px;background:var(--panel2);border-radius:4px}
+.track i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:linear-gradient(90deg,rgba(90,184,255,.55),var(--reviewer));transform-origin:left}
+.track i.crit{background:linear-gradient(90deg,rgba(255,92,122,.5),var(--crit))}
+.track b{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--fg);opacity:.75;border-radius:2px}
+.sv{font-family:var(--f-mono);font-size:12px;text-align:right}
+.axis{display:grid;grid-template-columns:110px minmax(0,1fr) 56px;gap:10px;font-family:var(--f-mono);font-size:10px;color:var(--faint);margin-top:4px}
+.axis span:nth-child(2){display:flex;justify-content:space-between}
+
+.stack{display:flex;height:22px;border-radius:6px;overflow:hidden;gap:2px;background:var(--panel2)}
+.stack i{display:block;transform-origin:left}
+.stack i.desk{background:var(--desk)} .stack i.reviewer{background:var(--reviewer)} .stack i.requestor{background:var(--requestor)}
+.legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.legend div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.legend .big{font-family:var(--f-display);font-stretch:70%;font-weight:800;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.legend .s{font-size:12px;color:var(--muted)}
+
+.next{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.next div{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:10px}
+.next b{display:block;font-family:var(--f-display);font-stretch:70%;font-weight:800;font-size:28px;line-height:1}
+.next span{font-size:12px;color:var(--muted)}
+
+.list{display:flex;flex-direction:column;gap:6px}
+.li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:9px 11px;text-align:left;width:100%;transition:border-color .15s}
+.li:hover{border-color:var(--signal)}
+.li .t{min-width:0;overflow-wrap:anywhere}
+.li .t small{display:block;color:var(--muted);font-size:12px}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px}
+th{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500}
+th button{background:none;border:0;padding:0;font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit}
+th button:hover{color:var(--fg)}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr{cursor:pointer;transition:background .12s}
+tbody tr:hover{background:var(--panel2)}
+tbody tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.input,.select{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;min-width:0}
+.input::placeholder{color:var(--faint)}
+.input:focus,.select:focus,textarea:focus{outline:none;border-color:var(--signal)}
+
+.segs{display:inline-flex;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
+.segs button{background:none;border:0;border-radius:7px;padding:5px 11px;font-size:12px;font-weight:600;color:var(--muted)}
+.segs button[aria-pressed="true"]{background:var(--fg);color:var(--ink)}
+
+.weeks{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;align-items:end;height:170px;padding-top:18px;border-bottom:1px solid var(--line2);position:relative}
+.wk{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:4px;min-width:0}
+.wk i{display:block;width:100%;max-width:34px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,var(--signal),rgba(255,138,61,.35));transform-origin:bottom}
+.wk i.zero{background:var(--line);height:2px!important}
+.wk span{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.wlabels{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;font-family:var(--f-mono);font-size:10px;color:var(--faint);margin-top:6px;text-align:center}
+
+.report{font-family:var(--f-mono);font-size:12.5px;line-height:1.7;white-space:pre-wrap;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px;max-height:420px;overflow:auto;margin:0}
+
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.tile{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:12px}
+.tile b{display:block;font-family:var(--f-display);font-stretch:68%;font-weight:800;font-size:32px;line-height:1.05;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--muted)}
+.delta{font-family:var(--f-mono);font-size:11px;margin-left:4px}
+.delta.good{color:var(--ok)} .delta.bad{color:var(--crit)}
+
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(4,7,15,.6);z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(580px,100%);background:var(--panel);border-left:1px solid var(--line2);z-index:60;transform:translateX(104%);transition:transform .32s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;box-shadow:-30px 0 60px -30px rgba(0,0,0,.6)}
+.drawer.on{transform:none}
+.dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:calc(16px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) 14px 20px;border-bottom:1px solid var(--line)}
+.dhead h2{font-family:var(--f-display);font-stretch:72%;font-weight:800;font-size:26px;line-height:1.05;margin:2px 0 0;text-transform:uppercase;overflow-wrap:anywhere}
+.dbody{overflow-y:auto;padding:18px max(20px,env(safe-area-inset-right,0px)) calc(30px + env(safe-area-inset-bottom,0px)) 20px;display:flex;flex-direction:column;gap:18px}
+.x{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;width:36px;height:36px;flex:none;font-size:18px;line-height:1}
+.sec h4{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:500;display:flex;justify-content:space-between;gap:8px}
+.facts{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.facts b{color:var(--fg);font-weight:600}
+
+.stepper{overflow-x:auto;padding:4px 2px 6px}
+.stepper ol{list-style:none;margin:0;padding:0;display:flex;min-width:min-content}
+.stepper li{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1 0 64px;position:relative;font-size:11px;color:var(--faint);text-align:center}
+.stepper li::before{content:"";position:absolute;top:8px;left:-50%;right:50%;height:2px;background:var(--line2)}
+.stepper li:first-child::before{display:none}
+.stepper li.done::before,.stepper li.cur::before{background:var(--signal)}
+.stepper li i{width:18px;height:18px;border-radius:50%;background:var(--panel2);border:2px solid var(--line2);position:relative;z-index:1}
+.stepper li.done i{background:var(--signal);border-color:var(--signal)}
+.stepper li.done{color:var(--muted)}
+.stepper li.cur{color:var(--fg);font-weight:600}
+.stepper li.cur i{border-color:var(--signal);background:var(--ink);box-shadow:0 0 0 4px var(--signal-soft);animation:ring 1.8s infinite}
+@keyframes ring{50%{box-shadow:0 0 0 7px rgba(255,138,61,.05)}}
+
+.actbox{background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.guard{border:1px solid var(--crit);background:var(--crit-soft);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px}
+.guard ul{margin:0;padding-left:18px}
+.dept{margin-bottom:10px}
+.dept .dh{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+.dept.cur .dh{color:var(--signal);font-weight:600}
+.chk{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:9px;padding:7px 8px;transition:background .12s}
+.chk:hover{background:var(--panel2)}
+.chk .box{width:18px;height:18px;border-radius:5px;border:2px solid var(--line2);flex:none;display:grid;place-items:center;margin-top:1px;transition:all .15s}
+.chk.on .box{background:var(--ok);border-color:var(--ok)}
+.chk.on .box::after{content:"";width:5px;height:9px;border:solid var(--ink);border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.chk .lt{flex:1;min-width:0}
+.chk.on .lt{color:var(--muted)}
+.chk small{display:block;font-size:11px;color:var(--faint);font-family:var(--f-mono)}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);background:var(--panel2);border-radius:999px;padding:3px 6px 3px 10px;font-size:12px}
+.tag button{background:none;border:0;color:var(--muted);padding:0 4px;font-size:14px;line-height:1}
+.inline{display:flex;gap:8px;flex-wrap:wrap}
+.inline .input{flex:1 1 160px}
+textarea.input{width:100%;min-height:80px;resize:vertical}
+.timeline{display:flex;flex-direction:column;gap:2px;font-size:13px}
+.timeline div{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.timeline span:first-child{color:var(--muted);font-family:var(--f-mono);font-size:12px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+.sw{width:42px;height:24px;border-radius:999px;background:var(--line2);border:0;position:relative;transition:background .2s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--fg);transition:transform .2s}
+.sw[aria-pressed="true"]{background:var(--crit)}
+.sw[aria-pressed="true"]::after{transform:translateX(18px)}
+
+form{display:flex;flex-direction:column;gap:14px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);min-width:0}
+label.f .input{color:var(--fg);font-size:14px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+fieldset{border:1px solid var(--line2);border-radius:12px;padding:10px 10px 6px;margin:0}
+legend{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 6px}
+.cb{display:flex;align-items:center;gap:10px;padding:6px 4px;font-size:13px;cursor:pointer}
+.cb input{width:17px;height:17px;accent-color:var(--signal);flex:none}
+.hint{font-size:12px;color:var(--faint);margin:-6px 0 0}
+.route{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px}
+.route span{border:1px solid var(--line2);border-radius:999px;padding:2px 9px;background:var(--panel2)}
+.route span.req{border-color:var(--signal);color:var(--signal)}
+.route em{color:var(--faint);font-style:normal}
+.preview{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px}
+.preview ul{margin:0;padding-left:18px;color:var(--muted)}
+.preview ul b{color:var(--fg);font-weight:600}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);opacity:0;background:var(--fg);color:var(--ink);font-weight:600;font-size:13px;padding:10px 16px;border-radius:10px;z-index:80;transition:all .25s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* Entry motion: only when a view is freshly opened */
+.view.enter .card,.view.enter .panel,.view.enter .li{animation:rise .5s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*35ms)}
+.view.enter .track i,.view.enter .stack i,.view.enter .abar i{animation:grow .9s cubic-bezier(.2,.7,.2,1) both;animation-delay:.15s}
+.view.enter .wk i{animation:growy .8s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*40ms)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes growy{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}h1{font-size:20px}.live{display:none}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .val{font-size:32px}.grid2{grid-template-columns:minmax(0,1fr)}.sbar,.axis{grid-template-columns:84px minmax(0,1fr) 48px}.legend .big{font-size:22px}.topact .btn.ghost .lbl{display:none}}
+</style>
+
+<header class="top">
+  <div class="wrap topin">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+        <rect x="1" y="1" width="38" height="38" rx="10" fill="#17223A" stroke="#33446C"/>
+        <path d="M9 27 L17 19 L23 24 L31 13" fill="none" stroke="#FF8A3D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="9" cy="27" r="2.6" fill="#5AB8FF"/><circle cx="17" cy="19" r="2.6" fill="#5AB8FF"/><circle cx="23" cy="24" r="2.6" fill="#5AB8FF"/><circle cx="31" cy="13" r="3.2" fill="#FF8A3D"/>
+      </svg>
+      <div><div class="eyebrow">Deal Desk · Process Owner</div><h1>Command <em>Center</em></h1></div>
+    </div>
+    <div class="topact">
+      <span class="live"><i></i><span id="today"></span></span>
+      <button class="btn ghost" data-act="settings" type="button">⚙ <span class="lbl">Data &amp; SLAs</span></button>
+      <button class="btn primary" data-act="new" type="button">+ New deal <kbd>N</kbd></button>
+    </div>
+  </div>
+  <div class="scan"></div>
+</header>
+
+<main class="wrap">
+  <div id="banner"></div>
+  <section class="kpis" id="kpis" aria-label="Scoreboard"></section>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <section id="view" class="view"></section>
+</main>
+
+<div class="scrim" id="scrim" data-act="close"></div>
+<aside class="drawer" id="drawer" aria-hidden="true"></aside>
+<div class="toast" id="toast" role="status"></div>
+<datalist id="excs"></datalist>
+<datalist id="reps"></datalist>
+
+<script>
+(function(){
+const DAY=864e5;
+const STAGES=[
+  {id:'intake',short:'Intake',name:'Deal Request',dept:'Sales / PSS',always:true},
+  {id:'psops',short:'PS Ops',name:'Operational Approvals',dept:'PS Sales Ops'},
+  {id:'acs',short:'ACS',name:'Scoping & Pricing',dept:'ACS Pro Services'},
+  {id:'legal',short:'Legal',name:'Contract Review',dept:'Legal'},
+  {id:'credit',short:'Credit',name:'Payment & Billing',dept:'Credit'},
+  {id:'ra',short:'Rev Assurance',name:'Revenue Compliance',dept:'Revenue Assurance',always:true},
+  {id:'cops',short:'Contract Ops',name:'Signature & Filing',dept:'Contract Operations',always:true},
+  {id:'om',short:'Order Mgmt',name:'Order Booking',dept:'Order Management',always:true},
+  {id:'booked',short:'Booked',name:'Deal Booked',dept:'',always:true}
+];
+const SMAP=Object.fromEntries(STAGES.map(s=>[s.id,s]));
+const TRIG={
+  pricing:{label:'Non-standard pricing or discount',ap:[['psops','Pricing approval']]},
+  travel:{label:'Customer travel policy',ap:[['psops','Customer travel policy approval']]},
+  terms:{label:'Non-standard deal terms',ap:[['psops','Non-standard terms approval'],['legal','Legal review of non-standard terms']]},
+  sow:{label:'PSD / SOW involved',ap:[['psops','PSD/SOW review & approval'],['acs','Project scope review'],['legal','PSD/SOW legal review']]},
+  services:{label:'Professional services pricing',ap:[['acs','Service pricing validated'],['acs','Scope and pricing match the deal']]},
+  payment:{label:'Non-standard payment terms',ap:[['credit','Payment terms approval']]},
+  billing:{label:'Billing cycle change',ap:[['credit','Billing cycle change approval']]}
+};
+const ALWAYS=[['ra','Revenue impact reviewed & RA guidelines met'],['cops','Signatures routed, tracked & filed'],['om','Booking documentation validated']];
+const INTAKE=['Customer requirements documented','Quote / pricing sheet attached','Deal structure summary','Billing entity & contacts','Target close date'];
+const COMMON_EXC=['Net 60 payment','Net 90 payment','Quarterly billing','Travel cap waived','Ramp pricing','Custom acceptance criteria','Custom SLA','Price hold','Termination for convenience'];
+const SLA_DEFAULT={intake:1,psops:2,acs:2,legal:3,credit:2,ra:1,cops:2,om:1};
+const WHO={desk:'Desk',reviewer:'Reviewer',requestor:'Requestor'};
+const LS='ddcc.v1';
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const uid=()=>Math.random().toString(36).slice(2,10);
+const now=()=>Date.now();
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=v=>v>=1e6?'$'+(v/1e6).toFixed(v>=1e7?0:1)+'M':'$'+Math.round(v/1e3)+'K';
+const dshort=t=>new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+const days=ms=>ms/DAY;
+const median=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const pctl=(a,p)=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.ceil(p*s.length)-1)]};
+
+function buildApprovals(trs){
+  const list=[],seen=new Set();
+  trs.forEach(t=>(TRIG[t]?.ap||[]).forEach(([dept,label])=>{const k=dept+'|'+label;if(!seen.has(k)){seen.add(k);list.push({id:uid(),dept,label,done:false,doneAt:null})}}));
+  ALWAYS.forEach(([dept,label])=>list.push({id:uid(),dept,label,done:false,doneAt:null}));
+  return list;
+}
+const reqStages=d=>{const s=new Set(d.approvals.map(a=>a.dept));return STAGES.filter(x=>x.always||s.has(x.id)).map(x=>x.id)};
+const nextStage=d=>{const r=reqStages(d);return r[r.indexOf(d.stage)+1]};
+const lastEntry=d=>d.history[d.history.length-1].at;
+const inStage=d=>now()-lastEntry(d);
+const sla=s=>(state.sla[s]??SLA_DEFAULT[s]??2);
+const ratio=d=>d.bookedAt?0:days(inStage(d))/sla(d.stage);
+const tone=r=>r>=1?'crit':r>=.75?'warn':'ok';
+const cycleMs=d=>(d.bookedAt||now())-d.createdAt;
+function stageDur(d){const o={},h=d.history;for(let i=0;i<h.length;i++){if(h[i].stage==='booked')continue;const e=i+1<h.length?h[i+1].at:now();o[h[i].stage]=(o[h[i].stage]||0)+Math.max(0,e-h[i].at)}return o}
+function waitSplit(d){const o={desk:0,reviewer:0,requestor:0},w=d.waitLog,end=d.bookedAt||now();for(let i=0;i<w.length;i++){const e=i+1<w.length?w[i+1].at:end;o[w[i].who]+=Math.max(0,e-w[i].at)}return o}
+const waiting=d=>d.bookedAt?null:(d.waitLog[d.waitLog.length-1]||{}).who;
+const intakePct=d=>d.intake.filter(Boolean).length/INTAKE.length;
+const apprDone=d=>d.approvals.filter(a=>a.done).length;
+
+/* ---------- Sample data ---------- */
+function makeSample(){
+  let seed=11;const r=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646};
+  const t0=now();
+  const reps=['J. Alvarez','M. Chen','R. Okafor','S. Patel','T. Brooks'];
+  const accts=['Acct-Northwind','Acct-Halcyon','Acct-Meridian','Acct-Brightline','Acct-Copperleaf','Acct-Vantage','Acct-Summit','Acct-Lumen','Acct-Arcadia','Acct-Keystone','Acct-Redwood','Acct-Orion','Acct-Tidewater','Acct-Granite','Acct-Beacon','Acct-Fjord','Acct-Ironbark'];
+  const plan=['booked','booked','booked','booked','booked','booked','booked','booked','intake','psops','acs','legal','legal','credit','ra','cops','om'];
+  const base={intake:.8,psops:1.6,acs:1.8,legal:3.2,credit:1.4,ra:.7,cops:1.5,om:.6};
+  const need={psops:'pricing',acs:'sow',legal:'terms',credit:'payment'};
+  return plan.map((target,i)=>{
+    let trs=Object.keys(TRIG).filter(()=>r()<.32);
+    if(need[target]&&!trs.includes(need[target]))trs.push(need[target]);
+    if(!trs.length)trs.push('pricing');
+    const d={id:uid(),code:'DD-'+(2041+i),account:accts[i],rep:reps[i%reps.length],value:Math.round(60+r()*840)*1000,triggers:trs,approvals:buildApprovals(trs),intake:INTAKE.map(()=>r()>.2),history:[],waitLog:[],exceptions:[],notes:'',kickback:false,overrides:[],bookedAt:null,sample:true};
+    const route=reqStages(d);const ti=target==='booked'?route.length-1:route.indexOf(target);
+    const durs=route.slice(0,ti).map(s=>base[s]*(.4+r()*1.4)*DAY);
+    const cur=target==='booked'?0:SLA_DEFAULT[target]*(.25+r()*1.35)*DAY;
+    const lag=target==='booked'?(1+r()*75)*DAY:0;
+    let t=t0-durs.reduce((a,b)=>a+b,0)-cur-lag;d.createdAt=t;
+    route.slice(0,ti+1).forEach((s,k)=>{
+      d.history.push({stage:s,at:t});
+      if(s==='booked'){d.bookedAt=t;return}
+      const dur=k<ti?durs[k]:cur;
+      d.waitLog.push({who:'desk',at:t});
+      if(s==='intake'){if(r()<.55)d.waitLog.push({who:'requestor',at:t+dur*.3})}
+      else{d.waitLog.push({who:'reviewer',at:t+dur*.2});if(r()<.3)d.waitLog.push({who:'requestor',at:t+dur*.65})}
+      d.approvals.filter(a=>a.dept===s).forEach(a=>{if(k<ti||r()<.4){a.done=true;a.doneAt=t+dur*(k<ti?.9:.5)}});
+      t+=dur;
+    });
+    d.stage=route[ti];
+    if(target==='booked'){d.intake=INTAKE.map(()=>true);if(i===3)d.kickback=true}
+    if(trs.includes('payment'))d.exceptions.push(r()<.7?'Net 60 payment':'Net 90 payment');
+    if(trs.includes('billing'))d.exceptions.push('Quarterly billing');
+    if(trs.includes('travel'))d.exceptions.push('Travel cap waived');
+    if(trs.includes('pricing')&&r()<.45)d.exceptions.push('Ramp pricing');
+    if(trs.includes('terms'))d.exceptions.push('Custom acceptance criteria');
+    return d;
+  });
+}
+
+/* ---------- State ---------- */
+let state,canStore=true;
+function load(){
+  try{const s=localStorage.getItem(LS);if(s){const p=JSON.parse(s);if(p&&Array.isArray(p.deals)){state=p;state.sla={...SLA_DEFAULT,...(p.sla||{})};return}}}catch(e){canStore=false}
+  state={deals:makeSample(),sla:{...SLA_DEFAULT},sample:true};
+}
+function save(){try{localStorage.setItem(LS,JSON.stringify(state));canStore=true}catch(e){canStore=false}}
+const ui={tab:'board',mode:null,id:null,guard:false,confirmDel:false,confirmClear:false,sort:{k:'age',dir:-1},q:'',stageF:'all',statusF:'active',period:90};
+const byId=id=>state.deals.find(d=>d.id===id);
+
+/* ---------- Toast & copy ---------- */
+let tt;function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2200)}
+function copy(text,ok,fallbackEl){
+  try{navigator.clipboard.writeText(text).then(()=>toast(ok),()=>fb())}catch(e){fb()}
+  function fb(){if(fallbackEl){const r=document.createRange();r.selectNodeContents(fallbackEl);const s=getSelection();s.removeAllRanges();s.addRange(r)}toast('Copy blocked here. Text is selected, press Ctrl/Cmd+C.')}
+}
+
+/* ---------- Count-up ---------- */
+const FMT={int:n=>Math.round(n).toLocaleString(),d1:n=>n.toFixed(1),pct:n=>Math.round(n)+'%',money:n=>money(n)};
+function countUp(root,animate){
+  root.querySelectorAll('[data-n]').forEach(el=>{
+    const n=+el.dataset.n,f=FMT[el.dataset.f||'int'],suf=el.dataset.s?`<small>${el.dataset.s}</small>`:'';
+    if(reduce||!animate){el.innerHTML=f(n)+suf;return}
+    const st=performance.now();
+    const step=ts=>{const p=Math.min(1,(ts-st)/1000),e=1-Math.pow(1-p,3);el.innerHTML=f(n*e)+suf;if(p<1)requestAnimationFrame(step)};
+    requestAnimationFrame(step);
+  });
+}
+
+/* ---------- KPIs ---------- */
+function renderKPIs(animate){
+  const D=state.deals,act=D.filter(d=>!d.bookedAt),t90=now()-90*DAY,bk=D.filter(d=>d.bookedAt&&d.bookedAt>=t90);
+  const cyc=bk.map(d=>days(cycleMs(d)));const med=median(cyc),p90=pctl(cyc,.9);
+  const aging=act.filter(d=>ratio(d)>=1).length;
+  const fp=bk.length?bk.filter(d=>!d.kickback).length/bk.length*100:null;
+  const ic=D.length?D.filter(d=>d.intake.every(Boolean)).length/D.length*100:null;
+  const ov=D.reduce((a,d)=>a+d.overrides.length,0);
+  const val=bk.reduce((a,d)=>a+d.value,0);
+  const v=(n,f,s)=>n==null?'—':`<span data-n="${n}" data-f="${f}"${s?` data-s="${s}"`:''}>0</span>`;
+  const tiles=[
+    {l:'Active deals',v:v(act.length,'int'),s:aging?`${aging} past SLA right now`:'Nothing past SLA',t:aging?'crit':'ok'},
+    {l:'Median cycle',v:v(med,'d1','days'),s:p90==null?'Booked deals, last 90 days':`Slowest 10% take ${p90.toFixed(1)}+ days`,t:med==null?'':med<=10?'ok':'warn'},
+    {l:'First-pass booking',v:v(fp,'pct'),s:`${bk.filter(d=>d.kickback).length} kicked back by Order Mgmt`,t:fp==null?'':fp>=95?'ok':fp>=85?'warn':'crit'},
+    {l:'Intake complete',v:v(ic,'pct'),s:'All five intake items in',t:ic==null?'':ic>=80?'ok':'warn'},
+    {l:'Approvals bypassed',v:v(ov,'int'),s:ov?'Each one is logged with a reason':'Zero is the standard',t:ov?'crit':'ok'},
+    {l:'Booked value · 90d',v:v(val,'money'),s:`${bk.length} deals booked`,t:''}
+  ];
+  const el=document.getElementById('kpis');
+  el.innerHTML=tiles.map(x=>`<div class="kpi"><div class="lab"><i class="${x.t}"></i>${x.l}</div><div class="val">${x.v}</div><div class="sub">${esc(x.s)}</div></div>`).join('');
+  countUp(el,animate);
+}
+
+/* ---------- Tabs ---------- */
+const TABS=[['board','Flow board'],['ledger','Deal ledger'],['radar','Bottleneck radar'],['exceptions','Exception library'],['impact','Impact report']];
+function renderTabs(){
+  const act=state.deals.filter(d=>!d.bookedAt).length;
+  const counts={board:act,ledger:state.deals.length,radar:state.deals.filter(d=>!d.bookedAt&&ratio(d)>=1).length,exceptions:excGroups().filter(g=>g.deals.length>=3).length,impact:''};
+  document.getElementById('tabs').innerHTML=TABS.map(([id,l],i)=>`<button class="tab" role="tab" aria-selected="${ui.tab===id}" data-act="tab" data-id="${id}">${l}<span class="n">${counts[id]===''?'':counts[id]}</span></button>`).join('');
+}
+
+/* ---------- Views ---------- */
+function card(d,i){
+  if(d.bookedAt){
+    return `<button class="card" data-act="open" data-id="${d.id}" style="--i:${i}"><div class="row"><span class="code">${esc(d.code)}</span><span class="chip ok">${days(cycleMs(d)).toFixed(1)}d cycle</span></div><div class="acct">${esc(d.account)}</div><div class="row meta"><span class="num">${money(d.value)}</span><span>${dshort(d.bookedAt)}${d.kickback?' · kicked back':''}</span></div></button>`;
+  }
+  const r=ratio(d),w=waiting(d),tot=d.approvals.length,dn=apprDone(d);
+  return `<button class="card" data-act="open" data-id="${d.id}" style="--i:${i}">
+    <div class="row"><span class="code">${esc(d.code)}</span><span class="chip ${tone(r)}">${days(inStage(d)).toFixed(1)}d / ${sla(d.stage)}d</span></div>
+    <div class="acct">${esc(d.account)}</div>
+    <div class="row meta"><span class="num">${money(d.value)} · ${esc(d.rep||'—')}</span>${w?`<span class="who ${w}">${WHO[w]}</span>`:''}</div>
+    <div class="abar"><i style="width:${tot?dn/tot*100:0}%"></i></div>
+    <div class="row meta"><span>${dn}/${tot} approvals</span>${intakePct(d)<1?'<span class="chip warn">Intake gaps</span>':''}</div>
+  </button>`;
+}
+function viewBoard(){
+  let k=0;
+  const cols=STAGES.map(s=>{
+    let items=state.deals.filter(d=>d.stage===s.id);const total=items.length;
+    if(s.id==='booked')items=items.sort((a,b)=>b.bookedAt-a.bookedAt).slice(0,6);else items.sort((a,b)=>ratio(b)-ratio(a));
+    const hot=s.id!=='booked'&&items.some(d=>ratio(d)>=1);
+    return `<section class="col${hot?' hot':''}"><header><div><span class="cname">${s.short}</span><span class="cdept">${s.dept||'Ready for revenue'}${s.id!=='booked'?` · SLA ${sla(s.id)}d`:''}</span></div><span class="ccount">${total}</span></header><div class="cards">${items.map(d=>card(d,k++)).join('')||'<p class="empty">Clear</p>'}</div></section>`;
+  }).join('');
+  return `<div class="board-wrap"><div class="board">${cols}</div></div>`;
+}
+
+const SORTS={code:d=>d.code,account:d=>d.account.toLowerCase(),rep:d=>(d.rep||'').toLowerCase(),value:d=>d.value,stage:d=>STAGES.findIndex(s=>s.id===d.stage),wait:d=>waiting(d)||'',age:d=>d.bookedAt?-1:ratio(d),cycle:d=>cycleMs(d),appr:d=>apprDone(d)/d.approvals.length};
+function ledgerRows(){
+  const q=ui.q.trim().toLowerCase();
+  let rows=state.deals.filter(d=>(ui.statusF==='all'||(ui.statusF==='active'?!d.bookedAt:!!d.bookedAt))&&(ui.stageF==='all'||d.stage===ui.stageF)&&(!q||[d.code,d.account,d.rep,...d.exceptions].join(' ').toLowerCase().includes(q)));
+  const f=SORTS[ui.sort.k];rows.sort((a,b)=>{const x=f(a),y=f(b);return(x>y?1:x<y?-1:0)*ui.sort.dir});
+  if(!rows.length)return `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No deals match. Try a different filter or add a deal.</td></tr>`;
+  return rows.map(d=>{const w=waiting(d);return `<tr data-act="open" data-id="${d.id}">
+    <td class="mono">${esc(d.code)}</td><td><b>${esc(d.account)}</b></td><td>${esc(d.rep||'—')}</td><td class="r num">${money(d.value)}</td>
+    <td>${SMAP[d.stage].short}</td><td>${w?`<span class="who ${w}">${WHO[w]}</span>`:'<span class="chip ok">Booked</span>'}</td>
+    <td class="r">${d.bookedAt?'—':`<span class="chip ${tone(ratio(d))}">${days(inStage(d)).toFixed(1)}d</span>`}</td>
+    <td class="r num">${days(cycleMs(d)).toFixed(1)}d</td><td class="r num">${apprDone(d)}/${d.approvals.length}</td></tr>`}).join('');
+}
+function viewLedger(){
+  const th=(k,l,r)=>`<th class="${r?'r':''}"><button data-act="sort" data-id="${k}">${l}${ui.sort.k===k?(ui.sort.dir>0?' ↑':' ↓'):''}</button></th>`;
+  return `<div class="panel" style="--i:0;display:flex;flex-direction:column;gap:12px">
+    <div class="filters">
+      <input class="input" id="lq" placeholder="Search ID, account, rep, exception" value="${esc(ui.q)}" style="flex:1 1 220px">
+      <select class="select" id="lstage"><option value="all">All stages</option>${STAGES.map(s=>`<option value="${s.id}"${ui.stageF===s.id?' selected':''}>${s.short}</option>`).join('')}</select>
+      <div class="segs">${['active','booked','all'].map(s=>`<button data-act="statusF" data-id="${s}" aria-pressed="${ui.statusF===s}">${s[0].toUpperCase()+s.slice(1)}</button>`).join('')}</div>
+    </div>
+    <div class="tablewrap"><table><thead><tr>${th('code','Deal')}${th('account','Account')}${th('rep','Rep')}${th('value','Value',1)}${th('stage','Stage')}${th('wait','Waiting on')}${th('age','In stage',1)}${th('cycle','Cycle',1)}${th('appr','Approvals',1)}</tr></thead><tbody id="lbody">${ledgerRows()}</tbody></table></div>
+  </div>`;
+}
+
+function viewRadar(){
+  const D=state.deals,act=D.filter(d=>!d.bookedAt);
+  const per={};D.forEach(d=>Object.entries(stageDur(d)).forEach(([s,ms])=>(per[s]=per[s]||[]).push(days(ms))));
+  const ss=STAGES.filter(s=>s.id!=='booked');
+  const meds=ss.map(s=>({s,m:median(per[s.id]||[]),n:(per[s.id]||[]).length}));
+  const mx=Math.max(1,...meds.map(x=>x.m||0),...ss.map(s=>sla(s.id)))*1.12;
+  const worst=meds.filter(x=>x.m!=null).sort((a,b)=>b.m/sla(b.s.id)-a.m/sla(a.s.id))[0];
+  const bars=meds.map(x=>`<div class="sbar"><span class="sl">${x.s.short}</span><div class="track" title="SLA ${sla(x.s.id)} days">${x.m!=null?`<i class="${x.m>sla(x.s.id)?'crit':''}" style="width:${x.m/mx*100}%"></i>`:''}<b style="left:${sla(x.s.id)/mx*100}%"></b></div><span class="sv">${x.m!=null?x.m.toFixed(1)+'d':'—'}</span></div>`).join('');
+  const ws={desk:0,reviewer:0,requestor:0};D.forEach(d=>{const w=waitSplit(d);for(const k in ws)ws[k]+=w[k]});
+  const wt=ws.desk+ws.reviewer+ws.requestor||1;const top=Object.keys(ws).sort((a,b)=>ws[b]-ws[a])[0];
+  const advice={requestor:'Requestor wait is the biggest share. Push back at intake: no clock starts until all five intake items are in, and coach the reps who submit incomplete requests.',reviewer:'Reviewer wait is the biggest share. Route Legal and Credit in parallel when both are needed, and agree on turnaround SLAs with each department.',desk:'Desk time is the biggest share. Template your routing emails, batch similar approvals, and pre-build SOW checklists.'};
+  const nextC={};act.forEach(d=>{const n=nextStage(d);if(n&&n!=='booked')nextC[n]=(nextC[n]||0)+1});
+  const aging=act.filter(d=>ratio(d)>=.75).sort((a,b)=>ratio(b)-ratio(a));
+  const reps={};D.forEach(d=>{const k=d.rep||'Unassigned';const r=reps[k]=reps[k]||{n:0,ic:0,rq:0,kb:0};r.n++;r.ic+=intakePct(d);r.rq+=days(waitSplit(d).requestor);if(d.kickback)r.kb++});
+  const repRows=Object.entries(reps).map(([k,r])=>({k,n:r.n,ic:r.ic/r.n*100,rq:r.rq/r.n,kb:r.kb})).sort((a,b)=>a.ic-b.ic);
+  return `<div class="grid">
+    <div class="panel span2" style="--i:0"><div class="ph"><h3>Median days in each stage</h3><p class="note">White marker is your SLA. Red bars run past it. Includes deals still in progress.</p></div>
+      ${bars}<div class="axis"><span></span><span><span>0d</span><span>${(mx/2).toFixed(1)}d</span><span>${mx.toFixed(1)}d</span></span><span></span></div>
+      ${worst?`<div class="insight"><b>${worst.s.short}</b> is your tightest constraint at ${worst.m.toFixed(1)} days against a ${sla(worst.s.id)}-day SLA. Fix this one first; improving anything else won't move total cycle time much.</div>`:''}
+    </div>
+    <div class="panel" style="--i:1"><div class="ph"><h3>Where the clock goes</h3><p class="note">All tracked time, by who held the deal</p></div>
+      <div class="stack">${['desk','reviewer','requestor'].map(k=>`<i class="${k}" style="flex:${ws[k]/wt}"></i>`).join('')}</div>
+      <div class="legend">${['desk','reviewer','requestor'].map(k=>`<div><span class="who ${k}">${WHO[k]} wait</span><span class="big">${Math.round(ws[k]/wt*100)}%</span><span class="s">${days(ws[k]).toFixed(0)} days total</span></div>`).join('')}</div>
+      <div class="insight">${advice[top]}</div>
+    </div>
+    <div class="panel" style="--i:2"><div class="ph"><h3>Heading your way next</h3><p class="note">Active deals by the next department they need</p></div>
+      <div class="next">${ss.filter(s=>s.id!=='intake').map(s=>`<div><b>${nextC[s.id]||0}</b><span>${s.short}</span></div>`).join('')}</div>
+      <p class="note" style="margin-top:12px">Give each department a heads-up before the volume lands.</p>
+    </div>
+    <div class="panel" style="--i:3"><div class="ph"><h3>Aging alerts</h3><p class="note">At 75%+ of SLA</p></div>
+      <div class="list">${aging.length?aging.slice(0,8).map((d,i)=>`<button class="li" data-act="open" data-id="${d.id}" style="--i:${i}"><span class="chip ${tone(ratio(d))}">${Math.round(ratio(d)*100)}%</span><span class="t"><b>${esc(d.code)} · ${esc(d.account)}</b><small>${SMAP[d.stage].short} · ${days(inStage(d)).toFixed(1)}d of ${sla(d.stage)}d · waiting on ${WHO[waiting(d)]||'—'}</small></span><span>›</span></button>`).join(''):'<p class="note">Every active deal is inside its SLA.</p>'}</div>
+    </div>
+    <div class="panel" style="--i:4"><div class="ph"><h3>Rep intake scorecard</h3><p class="note">Coach upstream</p></div>
+      <div class="tablewrap" style="border:0;background:none"><table style="min-width:380px"><thead><tr><th>Rep</th><th class="r">Deals</th><th class="r">Intake</th><th class="r">Req. wait</th><th class="r">Kickbacks</th></tr></thead><tbody>
+      ${repRows.map(r=>`<tr style="cursor:default"><td>${esc(r.k)}</td><td class="r num">${r.n}</td><td class="r"><span class="chip ${r.ic>=90?'ok':r.ic>=75?'warn':'crit'}">${Math.round(r.ic)}%</span></td><td class="r num">${r.rq.toFixed(1)}d</td><td class="r num">${r.kb}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+  </div>`;
+}
+
+function excGroups(){
+  const g={};state.deals.forEach(d=>d.exceptions.forEach(t=>{(g[t]=g[t]||[]).push(d)}));
+  return Object.entries(g).map(([tag,deals])=>({tag,deals})).sort((a,b)=>b.deals.length-a.deals.length);
+}
+function viewExceptions(){
+  const G=excGroups(),bk=state.deals.filter(d=>d.bookedAt),avgAll=bk.length?bk.reduce((a,d)=>a+days(cycleMs(d)),0)/bk.length:null;
+  const rows=G.map((g,i)=>{const b=g.deals.filter(d=>d.bookedAt);const avg=b.length?b.reduce((a,d)=>a+days(cycleMs(d)),0)/b.length:null;const diff=avg!=null&&avgAll!=null?avg-avgAll:null;const cand=g.deals.length>=3;
+    return `<div class="li" style="--i:${i};cursor:default;grid-template-columns:auto minmax(0,1fr) auto"><span class="chip ${cand?'warn':'mute'}">${g.deals.length}×</span><span class="t"><b>${esc(g.tag)}</b><small>${g.deals.map(d=>esc(d.code)).join(', ')}${diff!=null?` · booked deals ran ${diff>=0?'+':''}${diff.toFixed(1)}d vs average`:''}</small></span>${cand?`<button class="btn sm" data-act="proposal" data-id="${esc(g.tag)}">Draft proposal</button>`:'<span class="note">Watching</span>'}</div>`}).join('');
+  const cands=G.filter(g=>g.deals.length>=3).length;
+  return `<div class="grid">
+    <div class="panel span2" style="--i:0"><div class="ph"><h3>Recurring exceptions</h3><p class="note">Three or more hits makes it a candidate to standardize</p></div>
+      <div class="list">${rows||'<p class="note">No exceptions logged yet. Tag them on each deal as they come up.</p>'}</div>
+      ${cands?`<div class="insight"><b>${cands} exception${cands>1?'s':''}</b> keep coming back. Each one you turn into a pre-approved option removes a manual review from every future deal. That's the move from processing deals to shaping policy.</div>`:''}
+    </div>
+  </div>`;
+}
+
+function periodData(p,offset=0){
+  const end=now()-offset*p*DAY,start=p?end-p*DAY:0;
+  const inP=t=>t&&t>=start&&t<end;
+  const bk=state.deals.filter(d=>inP(d.bookedAt));const cyc=bk.map(d=>days(cycleMs(d)));
+  return{bk,med:median(cyc),p90:pctl(cyc,.9),fp:bk.length?bk.filter(d=>!d.kickback).length/bk.length*100:null,val:bk.reduce((a,d)=>a+d.value,0),
+    appr:state.deals.reduce((a,d)=>a+d.approvals.filter(x=>inP(x.doneAt)).length,0),
+    ov:state.deals.reduce((a,d)=>a+d.overrides.filter(o=>inP(o.at)).length,0),
+    exc:new Set(bk.flatMap(d=>d.exceptions)).size};
+}
+function viewImpact(){
+  const p=ui.period,cur=periodData(p),prev=p?periodData(p,1):null;
+  const dlt=(a,b,lowerBetter)=>{if(a==null||b==null||!b)return'';const ch=(a-b)/b*100;const good=lowerBetter?ch<0:ch>0;return `<span class="delta ${good?'good':'bad'}">${ch>0?'▲':'▼'}${Math.abs(ch).toFixed(0)}%</span>`};
+  const t0=now(),wk=[...Array(12)].map((_,i)=>{const e=t0-(11-i)*7*DAY,s=e-7*DAY;const b=state.deals.filter(d=>d.bookedAt&&d.bookedAt>=s&&d.bookedAt<e);return{s,n:b.length,v:b.reduce((a,d)=>a+d.value,0)}});
+  const wm=Math.max(1,...wk.map(w=>w.n));
+  const cands=excGroups().filter(g=>g.deals.length>=3);
+  const lab=p?`last ${p} days`:'all time';
+  const lines=[
+    `DEAL DESK IMPACT · ${lab.toUpperCase()}`,
+    ``,
+    `• Booked ${cur.bk.length} deal${cur.bk.length===1?'':'s'} worth ${money(cur.val)}.`,
+    cur.med!=null?`• Median request-to-booking cycle: ${cur.med.toFixed(1)} days${prev&&prev.med!=null?` (${cur.med<prev.med?'down':'up'} ${Math.abs((cur.med-prev.med)/prev.med*100).toFixed(0)}% vs prior ${p} days)`:''}. Slowest 10%: ${cur.p90.toFixed(1)}+ days.`:null,
+    cur.fp!=null?`• First-pass booking rate: ${Math.round(cur.fp)}% of deals booked by Order Management with no kickback.`:null,
+    `• Cleared ${cur.appr} required approval${cur.appr===1?'':'s'} across PS Sales Ops, ACS, Legal, Credit, Revenue Assurance, Contract Ops and Order Mgmt.`,
+    `• Approvals bypassed: ${cur.ov}${cur.ov?' (each logged with a documented reason)':''}.`,
+    cur.exc?`• Handled ${cur.exc} distinct non-standard exception type${cur.exc===1?'':'s'} on booked deals.`:null,
+    cands.length?`• Flagged ${cands.length} recurring exception${cands.length>1?'s':''} for standardization: ${cands.map(g=>g.tag).join(', ')}.`:null
+  ].filter(x=>x!==null).join('\n');
+  return `<div class="grid">
+    <div class="panel span2" style="--i:0"><div class="ph"><h3>Your impact</h3><div class="segs">${[[30,'30 days'],[90,'90 days'],[180,'6 months'],[0,'All time']].map(([v,l])=>`<button data-act="period" data-id="${v}" aria-pressed="${ui.period===v}">${l}</button>`).join('')}</div></div>
+      <div class="tiles">
+        <div class="tile"><b><span data-n="${cur.bk.length}" data-f="int">0</span></b><span>Deals booked ${prev?dlt(cur.bk.length,prev.bk.length,false):''}</span></div>
+        <div class="tile"><b><span data-n="${cur.val}" data-f="money">0</span></b><span>Value booked ${prev?dlt(cur.val,prev.val,false):''}</span></div>
+        <div class="tile"><b>${cur.med==null?'—':`<span data-n="${cur.med}" data-f="d1" data-s="d">0</span>`}</b><span>Median cycle ${prev?dlt(cur.med,prev.med,true):''}</span></div>
+        <div class="tile"><b>${cur.fp==null?'—':`<span data-n="${cur.fp}" data-f="pct">0</span>`}</b><span>First-pass booking</span></div>
+      </div>
+      <h4 class="eyebrow" style="margin:6px 0 0">Deals booked per week · last 12 weeks</h4>
+      <div class="weeks">${wk.map((w,i)=>`<div class="wk" title="${w.n} booked · ${money(w.v)}"><span>${w.n||''}</span><i class="${w.n?'':'zero'}" style="--i:${i};height:${w.n/wm*100}%"></i></div>`).join('')}</div>
+      <div class="wlabels">${wk.map((w,i)=>`<span>${i%2?'':dshort(w.s)}</span>`).join('')}</div>
+    </div>
+    <div class="panel span2" style="--i:1"><div class="ph"><h3>Review-ready summary</h3><button class="btn sm primary" data-act="copyImpact">Copy summary</button></div>
+      <pre class="report" id="report">${esc(lines)}</pre>
+      <p class="note" style="margin-top:10px">Paste this into a 1:1, a self-review, or a promotion case. The numbers come straight from your ledger.</p>
+    </div>
+  </div>`;
+}
+
+function renderView(animate){
+  const v=document.getElementById('view');
+  const fn={board:viewBoard,ledger:viewLedger,radar:viewRadar,exceptions:viewExceptions,impact:viewImpact}[ui.tab];
+  v.innerHTML=fn();
+  if(animate&&!reduce){v.classList.remove('enter');void v.offsetWidth;v.classList.add('enter');clearTimeout(v._t);v._t=setTimeout(()=>v.classList.remove('enter'),1400)}
+  countUp(v,animate);
+}
+function renderBanner(){
+  const b=document.getElementById('banner');
+  const hasSample=state.deals.some(d=>d.sample);
+  b.innerHTML=hasSample?`<div class="banner"><span><b>These are sample deals</b> so you can see how it works. Add your first real deal, then clear the samples.</span><button class="btn sm" data-act="clearSample">Clear sample deals</button></div>`:(!canStore?`<div class="banner"><span><b>This browser is blocking storage.</b> Your deals won't be kept after you close the page. Use Data &amp; SLAs → Copy backup.</span></div>`:'');
+}
+function renderAll(animate){renderBanner();renderKPIs(animate);renderTabs();renderView(animate);renderDrawer()}
+
+/* ---------- Drawer ---------- */
+function openDrawer(mode,id){ui.mode=mode;ui.id=id||null;ui.guard=false;ui.confirmDel=false;ui.confirmClear=false;renderDrawer();document.getElementById('drawer').classList.add('on');document.getElementById('drawer').setAttribute('aria-hidden','false');document.getElementById('scrim').classList.add('on');setTimeout(()=>{const f=document.querySelector('#drawer [autofocus]')||document.querySelector('#drawer .x');f&&f.focus()},60)}
+function closeDrawer(){ui.mode=null;document.getElementById('drawer').classList.remove('on');document.getElementById('drawer').setAttribute('aria-hidden','true');document.getElementById('scrim').classList.remove('on')}
+function renderDrawer(){
+  const el=document.getElementById('drawer');
+  if(!ui.mode){return}
+  if(ui.mode==='deal'){const d=byId(ui.id);if(!d){closeDrawer();return}el.innerHTML=dealHTML(d)}
+  else if(ui.mode==='new')el.innerHTML=newHTML();
+  else el.innerHTML=settingsHTML();
+}
+function head(eyebrow,title){return `<div class="dhead"><div style="min-width:0"><div class="eyebrow">${eyebrow}</div><h2>${title}</h2></div><button class="x" data-act="close" aria-label="Close">×</button></div>`}
+
+function dealHTML(d){
+  const route=reqStages(d),ci=route.indexOf(d.stage),nx=nextStage(d),w=waiting(d);
+  const openHere=d.approvals.filter(a=>a.dept===d.stage&&!a.done);
+  const steps=route.map((s,i)=>`<li class="${i<ci||d.bookedAt?'done':i===ci?'cur':''}"><i></i><span>${SMAP[s].short}</span></li>`).join('');
+  const sd=stageDur(d);
+  const depts=route.filter(s=>d.approvals.some(a=>a.dept===s));
+  const appr=depts.map(s=>{const L=d.approvals.filter(a=>a.dept===s);return `<div class="dept${s===d.stage?' cur':''}"><div class="dh"><span>${SMAP[s].dept}${s===d.stage?' · current':''}</span><span class="mono">${L.filter(a=>a.done).length}/${L.length}</span></div>${L.map(a=>`<button class="chk${a.done?' on':''}" data-act="appr" data-id="${a.id}"><span class="box"></span><span class="lt">${esc(a.label)}${a.done&&a.doneAt?`<small>Cleared ${dshort(a.doneAt)}</small>`:''}</span></button>`).join('')}</div>`}).join('');
+  const guard=ui.guard?`<div class="guard"><b>${openHere.length} approval${openHere.length>1?'s are':' is'} still open in ${SMAP[d.stage].dept}:</b><ul>${openHere.map(a=>`<li>${esc(a.label)}</li>`).join('')}</ul><span>Moving on now gets logged as a bypassed approval. Say why.</span><input class="input" id="guardReason" placeholder="Reason (e.g. VP approval by email, filed in opp)" autofocus><div class="inline"><button class="btn danger" data-act="guardGo">Log reason &amp; advance</button><button class="btn" data-act="guardCancel">Cancel</button></div></div>`:'';
+  const actions=d.bookedAt?`<div class="actbox"><div class="row"><span><b style="color:var(--ok)">Booked ${dshort(d.bookedAt)}</b> · ${days(cycleMs(d)).toFixed(1)} days from request</span><button class="btn sm" data-act="undo">Undo last move</button></div>
+      <div class="toggle"><span>Order Management kicked it back before booking</span><button class="sw" data-act="kick" aria-pressed="${d.kickback}" aria-label="Kicked back"></button></div></div>`
+    :`<div class="actbox">
+      <div class="row" style="flex-wrap:wrap"><span><b>${SMAP[d.stage].name}</b> · ${SMAP[d.stage].dept}<br><span class="meta">${days(inStage(d)).toFixed(1)} of ${sla(d.stage)} SLA days</span></span><span class="chip ${tone(ratio(d))}">${Math.round(ratio(d)*100)}% of SLA</span></div>
+      <div><div class="eyebrow" style="margin-bottom:6px">Who has the ball?</div><div class="segs">${Object.keys(WHO).map(k=>`<button data-act="wait" data-id="${k}" aria-pressed="${w===k}">${WHO[k]}</button>`).join('')}</div></div>
+      ${guard}
+      <div class="inline"><button class="btn primary" data-act="advance" style="flex:1;justify-content:center">${nx==='booked'?'Mark booked ✓':`Advance to ${SMAP[nx].short} →`}</button>${d.history.length>1?'<button class="btn" data-act="undo">Undo</button>':''}</div>
+      ${d.stage==='om'?`<div class="toggle"><span>Order Management kicked it back</span><button class="sw" data-act="kick" aria-pressed="${d.kickback}" aria-label="Kicked back"></button></div>`:''}
+    </div>`;
+  const tl=d.history.map((h,i)=>`<div><span>${dshort(h.at)}</span><span>${SMAP[h.stage].short}</span><span class="mono">${h.stage==='booked'?'✓':days(i+1<d.history.length?d.history[i+1].at-h.at:now()-h.at).toFixed(1)+'d'}</span></div>`).join('');
+  const ws=waitSplit(d),wt=ws.desk+ws.reviewer+ws.requestor||1;
+  return head(`${esc(d.code)} · ${esc(d.rep||'No rep')}`,esc(d.account))+`<div class="dbody">
+    <div class="facts"><span>Value <b class="num">${money(d.value)}</b></span><span>Opened <b>${dshort(d.createdAt)}</b></span><span>Cycle <b class="num">${days(cycleMs(d)).toFixed(1)}d</b></span><span>Approvals <b class="num">${apprDone(d)}/${d.approvals.length}</b></span></div>
+    <div class="stepper"><ol>${steps}</ol></div>
+    ${actions}
+    <div class="sec"><h4><span>Time split</span><span>${Object.keys(ws).map(k=>`${WHO[k]} ${days(ws[k]).toFixed(1)}d`).join(' · ')}</span></h4><div class="stack">${['desk','reviewer','requestor'].map(k=>`<i class="${k}" style="flex:${ws[k]/wt}"></i>`).join('')}</div></div>
+    <div class="sec"><h4><span>Required approvals</span></h4>${appr}
+      <div class="inline" style="margin-top:6px"><select class="select" id="newApprDept">${STAGES.filter(s=>!['intake','booked'].includes(s.id)).map(s=>`<option value="${s.id}">${s.short}</option>`).join('')}</select><input class="input" id="newApprLabel" placeholder="Add an approval this deal needs"><button class="btn sm" data-act="addAppr">Add</button></div></div>
+    <div class="sec"><h4><span>Intake checklist</span><span>${d.intake.filter(Boolean).length}/${INTAKE.length}</span></h4>${INTAKE.map((l,i)=>`<button class="chk${d.intake[i]?' on':''}" data-act="intake" data-id="${i}"><span class="box"></span><span class="lt">${l}</span></button>`).join('')}</div>
+    <div class="sec"><h4><span>Exceptions on this deal</span></h4><div class="tags" style="margin-bottom:8px">${d.exceptions.map(t=>`<span class="tag">${esc(t)}<button data-act="excRemove" data-id="${esc(t)}" aria-label="Remove">×</button></span>`).join('')||'<span class="note">None tagged</span>'}</div>
+      <div class="inline"><input class="input" id="excIn" list="excs" placeholder="e.g. Net 60 payment"><button class="btn sm" data-act="excAdd">Tag</button></div></div>
+    <div class="sec"><h4><span>Notes</span></h4><textarea class="input" id="notes" placeholder="Context, who you're chasing, next step">${esc(d.notes)}</textarea></div>
+    ${d.overrides.length?`<div class="sec"><h4><span>Bypassed approvals</span></h4>${d.overrides.map(o=>`<div class="note">${dshort(o.at)} · ${SMAP[o.stage].short} · ${o.count} open · “${esc(o.reason)}”</div>`).join('')}</div>`:''}
+    <div class="sec"><h4><span>Timeline</span></h4><div class="timeline">${tl}</div></div>
+    <div class="sec">${ui.confirmDel?`<div class="guard"><span>Delete ${esc(d.code)} and its history? This can't be undone.</span><div class="inline"><button class="btn danger solid" data-act="delGo">Delete deal</button><button class="btn" data-act="delCancel">Keep it</button></div></div>`:'<button class="btn danger sm" data-act="del">Delete deal</button>'}</div>
+  </div>`;
+}
+
+function nextCode(){let m=0;state.deals.forEach(d=>{const n=parseInt(String(d.code).replace(/\D/g,''),10);if(n>m)m=n});return 'DD-'+(m+1||1001)}
+function newHTML(){
+  return head('New deal request','Start the clock')+`<div class="dbody"><form id="newform" autocomplete="off">
+    <div class="grid2"><label class="f">Deal ID<input class="input" id="f-code" value="${nextCode()}" required></label><label class="f">Account alias<input class="input" id="f-acct" placeholder="Acct-Northwind or opp ID" required autofocus></label></div>
+    <p class="hint">Use an alias or opportunity ID. Keep customer names, pricing files and contract text in Adobe's systems.</p>
+    <div class="grid2"><label class="f">Sales / PSS rep<input class="input" id="f-rep" list="reps" placeholder="Rep name"></label><label class="f">Deal value (USD)<input class="input" id="f-val" type="number" min="0" step="1000" placeholder="250000"></label></div>
+    <fieldset><legend>What's non-standard?</legend>${Object.entries(TRIG).map(([k,t])=>`<label class="cb"><input type="checkbox" name="trig" value="${k}" id="t-${k}">${t.label}</label>`).join('')}</fieldset>
+    <div id="preview"></div>
+    <fieldset><legend>Intake checklist</legend>${INTAKE.map((l,i)=>`<label class="cb"><input type="checkbox" name="intake" value="${i}" id="i-${i}">${l}</label>`).join('')}</fieldset>
+    <label class="f">Notes<textarea class="input" id="f-notes" placeholder="Anything the reviewers should know"></textarea></label>
+    <button class="btn primary big" type="submit">Create deal &amp; start the clock</button>
+  </form></div>`;
+}
+function previewHTML(){
+  const trs=[...document.querySelectorAll('#newform [name=trig]:checked')].map(x=>x.value);
+  const ic=document.querySelectorAll('#newform [name=intake]:checked').length;
+  const ap=buildApprovals(trs);const fake={approvals:ap};const route=reqStages(fake);
+  return `<div class="preview"><div class="eyebrow">Route this deal will take</div>
+    <div class="route">${route.map((s,i)=>`${i?'<em>→</em>':''}<span class="${['psops','acs','legal','credit'].includes(s)?'req':''}">${SMAP[s].short}</span>`).join('')}</div>
+    <div class="eyebrow">${ap.length} approvals to collect</div>
+    <ul>${route.filter(s=>ap.some(a=>a.dept===s)).map(s=>`<li><b>${SMAP[s].dept}:</b> ${ap.filter(a=>a.dept===s).map(a=>esc(a.label)).join('; ')}</li>`).join('')}</ul>
+    ${ic<INTAKE.length?`<div style="color:var(--warn);font-size:12px">Intake ${ic}/${INTAKE.length}. The deal starts as waiting on the requestor until the gaps are filled.</div>`:'<div style="color:var(--ok);font-size:12px">Intake complete. Clean start.</div>'}
+  </div>`;
+}
+
+function settingsHTML(){
+  return head('Data & SLAs','Desk settings')+`<div class="dbody">
+    <div class="sec"><h4><span>Stage SLAs (days)</span></h4><p class="note" style="margin:0 0 10px">Set the turnaround you expect at each stage. Aging alerts and colors use these.</p>
+      <div class="grid2">${STAGES.filter(s=>s.id!=='booked').map(s=>`<label class="f">${s.short}<input class="input" type="number" min="0.5" step="0.5" id="sla-${s.id}" data-sla="${s.id}" value="${sla(s.id)}"></label>`).join('')}</div></div>
+    <div class="sec"><h4><span>Where your data lives</span></h4><p class="note" style="margin:0 0 10px">${canStore?'Deals are saved only in this browser on this device. Nothing is sent anywhere.':'This browser is blocking storage, so deals disappear when the page closes.'} Copy a backup regularly and keep it somewhere approved.</p>
+      <div class="inline"><button class="btn" data-act="backup">Copy backup</button><button class="btn" data-act="loadSample">Load sample deals</button></div></div>
+    <div class="sec"><h4><span>Restore from a backup</span></h4><textarea class="input" id="restoreTxt" placeholder="Paste backup text here"></textarea>
+      <div class="inline" style="margin-top:8px"><button class="btn" data-act="restore">Restore</button><label class="btn" style="cursor:pointer">Choose file<input type="file" id="restoreFile" accept=".json,.txt,application/json" hidden></label></div></div>
+    <div class="sec"><h4><span>Start fresh</span></h4>${ui.confirmClear?`<div class="guard"><span>Remove every deal, sample and real? Copy a backup first if you need one.</span><div class="inline"><button class="btn danger solid" data-act="clearGo">Remove all deals</button><button class="btn" data-act="clearCancel">Cancel</button></div></div>`:'<button class="btn danger" data-act="clear">Remove all deals</button>'}</div>
+  </div>`;
+}
+
+/* ---------- Actions ---------- */
+function commit(msg,anim){save();renderAll(!!anim);if(msg)toast(msg)}
+function setWait(d,who,t){if(waiting(d)!==who)d.waitLog.push({who,at:t||now()})}
+function doAdvance(d,reason){
+  const nx=nextStage(d);if(!nx)return;const t=now();
+  const open=d.approvals.filter(a=>a.dept===d.stage&&!a.done);
+  if(open.length){d.overrides.push({stage:d.stage,count:open.length,reason,at:t})}
+  d.history.push({stage:nx,at:t});d.stage=nx;ui.guard=false;
+  if(nx==='booked'){d.bookedAt=t;commit(`${d.code} booked in ${days(cycleMs(d)).toFixed(1)} days`)}
+  else{setWait(d,'reviewer',t);commit(`${d.code} moved to ${SMAP[nx].short}`)}
+}
+const H={
+  tab:id=>{ui.tab=id;renderTabs();renderView(true)},
+  open:id=>openDrawer('deal',id),
+  new:()=>openDrawer('new'),
+  settings:()=>openDrawer('settings'),
+  close:()=>closeDrawer(),
+  advance:()=>{const d=byId(ui.id);const open=d.approvals.filter(a=>a.dept===d.stage&&!a.done);if(open.length){ui.guard=true;renderDrawer();setTimeout(()=>{const g=document.getElementById('guardReason');g&&g.focus()},30)}else doAdvance(d)},
+  guardGo:()=>{const r=(document.getElementById('guardReason').value||'').trim();if(!r){toast('Add a reason so the bypass is documented');return}doAdvance(byId(ui.id),r)},
+  guardCancel:()=>{ui.guard=false;renderDrawer()},
+  undo:()=>{const d=byId(ui.id);if(d.history.length<2)return;const last=d.history.pop();d.overrides=d.overrides.filter(o=>o.at!==last.at);d.waitLog=d.waitLog.filter(w=>w.at<last.at);d.stage=d.history[d.history.length-1].stage;if(last.stage==='booked'){d.bookedAt=null;d.kickback=false}commit(`Moved ${d.code} back to ${SMAP[d.stage].short}`)},
+  wait:who=>{const d=byId(ui.id);setWait(d,who);commit(`Waiting on ${WHO[who].toLowerCase()}`)},
+  appr:id=>{const d=byId(ui.id);const a=d.approvals.find(x=>x.id===id);a.done=!a.done;a.doneAt=a.done?now():null;commit(a.done?'Approval cleared':'Approval reopened')},
+  intake:i=>{const d=byId(ui.id);d.intake[i]=!d.intake[i];if(d.stage==='intake'&&d.intake.every(Boolean)&&waiting(d)==='requestor')setWait(d,'desk');commit()},
+  kick:()=>{const d=byId(ui.id);d.kickback=!d.kickback;commit(d.kickback?'Kickback logged':'Kickback cleared')},
+  excAdd:()=>{const v=(document.getElementById('excIn').value||'').trim();if(!v)return;const d=byId(ui.id);if(!d.exceptions.some(x=>x.toLowerCase()===v.toLowerCase()))d.exceptions.push(v);commit('Exception tagged');setTimeout(()=>{const e=document.getElementById('excIn');e&&e.focus()},20)},
+  excRemove:t=>{const d=byId(ui.id);d.exceptions=d.exceptions.filter(x=>x!==t);commit()},
+  addAppr:()=>{const l=(document.getElementById('newApprLabel').value||'').trim();if(!l){toast('Name the approval first');return}const d=byId(ui.id);d.approvals.push({id:uid(),dept:document.getElementById('newApprDept').value,label:l,done:false,doneAt:null});commit('Approval added')},
+  del:()=>{ui.confirmDel=true;renderDrawer()},delCancel:()=>{ui.confirmDel=false;renderDrawer()},
+  delGo:()=>{const d=byId(ui.id);state.deals=state.deals.filter(x=>x.id!==d.id);closeDrawer();commit(`${d.code} deleted`)},
+  sort:k=>{ui.sort=ui.sort.k===k?{k,dir:-ui.sort.dir}:{k,dir:['account','rep','code','stage','wait'].includes(k)?1:-1};renderView(false)},
+  statusF:s=>{ui.statusF=s;renderView(false)},
+  period:p=>{ui.period=+p;renderView(true)},
+  copyImpact:()=>copy(document.getElementById('report').textContent,'Summary copied',document.getElementById('report')),
+  proposal:tag=>{const g=excGroups().find(x=>x.tag===tag);const bk=state.deals.filter(d=>d.bookedAt);const avg=a=>a.length?(a.reduce((s,d)=>s+days(cycleMs(d)),0)/a.length).toFixed(1):'n/a';
+    const txt=`Proposal: make "${tag}" a pre-approved deal option\n\nWhat I'm seeing: "${tag}" came up on ${g.deals.length} deals (${g.deals.map(d=>d.code).join(', ')}). Each one needed its own approval round.\nImpact: booked deals with this exception averaged ${avg(g.deals.filter(d=>d.bookedAt))} days from request to booking, vs ${avg(bk)} days across all booked deals.\nAsk: agree on standard guardrails for "${tag}" so deals that fit them skip the manual review.\nOwner: Deal Desk`;
+    copy(txt,'Proposal copied. Paste it into an email or doc.')},
+  clearSample:()=>{state.deals=state.deals.filter(d=>!d.sample);state.sample=false;commit('Sample deals cleared',true)},
+  loadSample:()=>{state.deals=state.deals.filter(d=>!d.sample).concat(makeSample());commit('Sample deals loaded',true)},
+  backup:()=>copy(JSON.stringify(state),'Backup copied. Paste it somewhere safe.'),
+  restore:()=>restoreFrom(document.getElementById('restoreTxt').value),
+  clear:()=>{ui.confirmClear=true;renderDrawer()},clearCancel:()=>{ui.confirmClear=false;renderDrawer()},
+  clearGo:()=>{state.deals=[];state.sample=false;ui.confirmClear=false;commit('All deals removed',true)}
+};
+function restoreFrom(txt){try{const p=JSON.parse(txt);if(!p||!Array.isArray(p.deals))throw 0;state={deals:p.deals,sla:{...SLA_DEFAULT,...(p.sla||{})},sample:!!p.sample};closeDrawer();commit(`Restored ${p.deals.length} deals`,true)}catch(e){toast("That isn't a valid backup. Paste the full text from Copy backup.")}}
+
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;const f=H[t.dataset.act];if(f){if(t.tagName==='BUTTON'||t.tagName==='TR'||t.id==='scrim')e.preventDefault();f(t.dataset.id)}});
+document.addEventListener('input',e=>{
+  if(e.target.id==='lq'){ui.q=e.target.value;document.getElementById('lbody').innerHTML=ledgerRows()}
+  else if(e.target.id==='notes'){const d=byId(ui.id);d.notes=e.target.value;save()}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='lstage'){ui.stageF=t.value;document.getElementById('lbody').innerHTML=ledgerRows()}
+  else if(t.dataset&&t.dataset.sla){const v=parseFloat(t.value);if(v>0){state.sla[t.dataset.sla]=v;save();renderBanner();renderKPIs(false);renderTabs();renderView(false);toast(`${SMAP[t.dataset.sla].short} SLA set to ${v} days`)}}
+  else if(t.closest&&t.closest('#newform')){document.getElementById('preview').innerHTML=previewHTML()}
+  else if(t.id==='restoreFile'&&t.files[0]){const r=new FileReader();r.onload=()=>restoreFrom(r.result);r.readAsText(t.files[0])}
+});
+document.addEventListener('submit',e=>{
+  if(e.target.id!=='newform')return;e.preventDefault();
+  const g=id=>document.getElementById(id).value.trim();
+  const trs=[...document.querySelectorAll('#newform [name=trig]:checked')].map(x=>x.value);
+  const intake=INTAKE.map((_,i)=>document.getElementById('i-'+i).checked);
+  const t=now();
+  const d={id:uid(),code:g('f-code')||nextCode(),account:g('f-acct'),rep:g('f-rep'),value:parseFloat(g('f-val'))||0,triggers:trs,approvals:buildApprovals(trs),intake,history:[{stage:'intake',at:t}],waitLog:[{who:intake.every(Boolean)?'desk':'requestor',at:t}],exceptions:[],notes:g('f-notes'),kickback:false,overrides:[],bookedAt:null,createdAt:t,stage:'intake'};
+  state.deals.push(d);save();renderAll(false);openDrawer('deal',d.id);toast(`${d.code} created. Clock started.`);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&ui.mode){closeDrawer();return}
+  if(e.key==='Enter'&&e.target.id==='excIn'){e.preventDefault();H.excAdd()}
+  if(e.key==='Enter'&&e.target.id==='newApprLabel'){e.preventDefault();H.addAppr()}
+  if(e.key==='Enter'&&e.target.id==='guardReason'){e.preventDefault();H.guardGo()}
+  const typing=/INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
+  if(typing||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==='n'||e.key==='N'){e.preventDefault();openDrawer('new')}
+  const n=parseInt(e.key,10);if(n>=1&&n<=5&&!ui.mode)H.tab(TABS[n-1][0]);
+});
+document.addEventListener('focusin',e=>{if(e.target.closest&&e.target.closest('#newform')&&!document.getElementById('preview').innerHTML)document.getElementById('preview').innerHTML=previewHTML()});
+
+/* ---------- Boot ---------- */
+load();
+document.getElementById('excs').innerHTML=COMMON_EXC.map(x=>`<option value="${esc(x)}">`).join('');
+document.getElementById('reps').innerHTML=[...new Set(state.deals.map(d=>d.rep).filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('');
+document.getElementById('today').textContent='Desk open · '+new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+renderAll(true);
+setInterval(()=>{if(!ui.mode){renderKPIs(false);if(ui.tab==='board'||ui.tab==='radar')renderView(false)}},60000);
+const obs=new MutationObserver(()=>{const p=document.getElementById('preview');if(p&&!p.innerHTML)p.innerHTML=previewHTML()});
+obs.observe(document.getElementById('drawer'),{childList:true});
+})();
+</script>
