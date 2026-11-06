@@ -1,15 +1,17 @@
 <title>Deal Desk Command Center</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#0A0F1D">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: control-room console. Sticky command bar, KPI scoreboard, then one working view at a time (flow board, ledger, bottleneck radar, exception library, impact report). Detail lives in a right-hand drawer. */
+/* Layout: control-room console. Sticky command bar, KPI scoreboard, one working view at a time (Today, Flow board, Ledger, Radar, Playbook, Impact). Every deal opens in a right-hand drawer. */
 :root{
   --ink:#0A0F1D; --panel:#111A2C; --panel2:#17223A; --line:#223050; --line2:#33446C;
   --fg:#E9EEF8; --muted:#8E9AB6; --faint:#5F6C8B;
   --signal:#FF8A3D; --signal-ink:#1C0F05; --signal-soft:rgba(255,138,61,.14);
   --desk:#FF8A3D; --reviewer:#5AB8FF; --requestor:#B892FF;
+  --fast:#6EE7D2; --complex:#DCE3F2; --exception:#FF9EC1;
   --ok:#3DDC97; --warn:#FFC857; --crit:#FF5C7A;
   --ok-soft:rgba(61,220,151,.13); --warn-soft:rgba(255,200,87,.14); --crit-soft:rgba(255,92,122,.15);
   --glow:rgba(90,184,255,.10);
@@ -23,29 +25,31 @@ html,body{background:var(--ink)}
 body{color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5;min-height:100vh;
   background:radial-gradient(1200px 500px at 85% -10%,var(--glow),transparent 60%),radial-gradient(900px 400px at -10% 0%,var(--signal-soft),transparent 55%),var(--ink);background-attachment:fixed}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--ink)}
-.wrap{max-width:1400px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1440px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-radius:6px}
-.num,.mono{font-variant-numeric:tabular-nums}
-.mono{font-family:var(--f-mono)}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 
-/* Command bar */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:rgba(10,15,29,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:rgba(10,15,29,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .topin{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:12px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
 .mark{width:38px;height:38px;flex:none}
-.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
 h1{font-family:var(--f-display);font-stretch:72%;font-weight:800;font-size:24px;line-height:1;margin:2px 0 0;letter-spacing:.01em;text-transform:uppercase}
 h1 em{font-style:normal;color:var(--signal)}
 .topact{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .live{display:inline-flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding:0 6px}
-.live i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:pulse 2.4s infinite}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 2.4s infinite}
+.qpill{font-family:var(--f-mono);font-size:12px;border:1px solid var(--line2);border-radius:999px;padding:4px 10px;color:var(--muted)}
+.qpill b{color:var(--signal);font-weight:500}
+.qpill.hot{border-color:var(--crit);color:var(--fg);background:var(--crit-soft)}
 .scan{height:2px;background:linear-gradient(90deg,transparent,var(--signal),var(--reviewer),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:scan 5s linear infinite;opacity:.8}
 @keyframes scan{from{background-position:-40% 0}to{background-position:140% 0}}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,220,151,.55)}70%{box-shadow:0 0 0 9px rgba(61,220,151,0)}100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}}
 
-.btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);padding:8px 14px;font-weight:600;font-size:13px;transition:transform .15s,background .15s,border-color .15s,box-shadow .2s}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);padding:8px 14px;font-weight:600;font-size:13px;transition:transform .15s,background .15s,border-color .15s,box-shadow .2s;white-space:nowrap}
 .btn:hover{transform:translateY(-1px);border-color:var(--faint)}
 .btn.primary{background:var(--signal);color:var(--signal-ink);border-color:var(--signal);box-shadow:0 6px 24px -8px var(--signal)}
 .btn.primary:hover{box-shadow:0 10px 30px -8px var(--signal)}
@@ -54,16 +58,17 @@ h1 em{font-style:normal;color:var(--signal)}
 .btn.danger.solid{background:var(--crit);color:var(--ink)}
 .btn.big{padding:12px 18px;font-size:14px;width:100%;justify-content:center}
 .btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+.link{background:none;border:0;color:var(--reviewer);font-size:12px;padding:0;font-weight:500}
+.link:hover{text-decoration:underline}
 kbd{font-family:var(--f-mono);font-size:10px;border:1px solid currentColor;border-radius:4px;padding:0 4px;opacity:.7}
 
 main{padding-block:20px 60px;display:flex;flex-direction:column;gap:18px}
-
 .banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px dashed var(--line2);border-radius:12px;padding:10px 14px;color:var(--muted);font-size:13px}
 .banner b{color:var(--fg)}
 
-/* KPI scoreboard */
 .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.kpi{background:var(--panel);padding:16px 18px 14px;display:flex;flex-direction:column;gap:4px;min-width:0;position:relative}
+.kpi{background:var(--panel);padding:16px 18px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .kpi .lab{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px}
 .kpi .lab i{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
 .kpi .lab i.ok{background:var(--ok)} .kpi .lab i.warn{background:var(--warn)} .kpi .lab i.crit{background:var(--crit)}
@@ -72,17 +77,17 @@ main{padding-block:20px 60px;display:flex;flex-direction:column;gap:18px}
 .kpi .sub{font-size:12px;color:var(--muted)}
 .kpi:first-child .val{color:var(--signal)}
 
-/* Tabs */
 .tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{background:none;border:0;padding:10px 14px;font-weight:600;color:var(--muted);position:relative;white-space:nowrap;display:flex;align-items:center;gap:8px}
 .tab .n{font-family:var(--f-mono);font-size:11px;color:var(--faint)}
+.tab .n.hot{color:var(--crit)}
 .tab::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--signal);transform:scaleX(0);transition:transform .25s}
 .tab[aria-selected="true"]{color:var(--fg)}
 .tab[aria-selected="true"]::after{transform:scaleX(1)}
 .tab:hover{color:var(--fg)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 
-/* Board */
 .board-wrap{overflow-x:auto;padding-bottom:8px;margin-inline:-4px}
 .board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(232px,1fr);gap:10px;padding:4px;min-width:min-content}
 .col{background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;min-height:280px;min-width:0}
@@ -93,41 +98,51 @@ main{padding-block:20px 60px;display:flex;flex-direction:column;gap:18px}
 .col.hot>header .ccount{background:var(--crit-soft);border-color:var(--crit);color:var(--crit)}
 .cards{display:flex;flex-direction:column;gap:8px;padding:10px}
 .empty{color:var(--faint);font-size:12px;text-align:center;margin:16px 0}
-.card{text-align:left;background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:10px 11px;display:flex;flex-direction:column;gap:6px;transition:transform .15s,border-color .15s,box-shadow .2s;width:100%}
+.card{text-align:left;background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:10px 11px;display:flex;flex-direction:column;gap:6px;transition:transform .15s,border-color .15s,box-shadow .2s;width:100%;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--lane,transparent)}
 .card:hover{transform:translateY(-2px);border-color:var(--signal);box-shadow:0 10px 24px -14px var(--signal)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .code{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
 .acct{font-weight:600;font-size:14px;overflow-wrap:anywhere}
 .meta{font-size:12px;color:var(--muted)}
-.chip{font-family:var(--f-mono);font-size:11px;border-radius:999px;padding:1px 8px;border:1px solid;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font-family:var(--f-mono);font-size:11px;border-radius:999px;padding:1px 8px;border:1px solid;font-variant-numeric:tabular-nums;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
 .chip.ok{color:var(--ok);border-color:rgba(61,220,151,.4);background:var(--ok-soft)}
 .chip.warn{color:var(--warn);border-color:rgba(255,200,87,.45);background:var(--warn-soft)}
 .chip.crit{color:var(--crit);border-color:rgba(255,92,122,.5);background:var(--crit-soft)}
 .chip.mute{color:var(--muted);border-color:var(--line2)}
+.chip.par{color:var(--reviewer);border-color:rgba(90,184,255,.45)}
+.lane{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;border-radius:5px;padding:1px 6px;border:1px solid;white-space:nowrap}
+.lane.fast{color:var(--fast);border-color:rgba(110,231,210,.45)}
+.lane.complex{color:var(--complex);border-color:rgba(220,227,242,.35)}
+.lane.exception{color:var(--exception);border-color:rgba(255,158,193,.5);background:rgba(255,158,193,.08)}
 .who{font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .who::before{content:"";width:7px;height:7px;border-radius:2px;background:currentColor}
 .who.desk{color:var(--desk)} .who.reviewer{color:var(--reviewer)} .who.requestor{color:var(--requestor)}
 .abar{height:4px;border-radius:4px;background:var(--line);overflow:hidden}
 .abar i{display:block;height:100%;background:var(--ok);border-radius:4px}
 
-/* Panels */
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .span2{grid-column:1/-1}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}
 .panel h3{font-family:var(--f-display);font-stretch:75%;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.02em;margin:0;text-wrap:balance}
 .panel .ph{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-.panel .note{color:var(--muted);font-size:12px;margin:0}
+.note{color:var(--muted);font-size:12px;margin:0}
 .insight{margin-top:14px;padding:10px 12px;border-radius:10px;background:var(--signal-soft);border:1px solid rgba(255,138,61,.35);font-size:13px}
 .insight b{color:var(--signal)}
+.bignum{font-family:var(--f-display);font-stretch:68%;font-weight:800;font-size:46px;line-height:1;font-variant-numeric:tabular-nums}
+.bignum small{font-size:.42em;color:var(--muted);font-weight:600;margin-left:4px}
 
-.sbar{display:grid;grid-template-columns:110px minmax(0,1fr) 56px;align-items:center;gap:10px;padding:5px 0}
-.sl{font-size:13px;color:var(--muted)}
+.sbar{display:grid;grid-template-columns:110px minmax(0,1fr) 64px;align-items:center;gap:10px;padding:5px 0}
+.sl{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .track{position:relative;height:14px;background:var(--panel2);border-radius:4px}
 .track i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:linear-gradient(90deg,rgba(90,184,255,.55),var(--reviewer));transform-origin:left}
 .track i.crit{background:linear-gradient(90deg,rgba(255,92,122,.5),var(--crit))}
+.track i.sig{background:linear-gradient(90deg,rgba(255,138,61,.45),var(--signal))}
 .track b{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--fg);opacity:.75;border-radius:2px}
 .sv{font-family:var(--f-mono);font-size:12px;text-align:right}
-.axis{display:grid;grid-template-columns:110px minmax(0,1fr) 56px;gap:10px;font-family:var(--f-mono);font-size:10px;color:var(--faint);margin-top:4px}
+.axis{display:grid;grid-template-columns:110px minmax(0,1fr) 64px;gap:10px;font-family:var(--f-mono);font-size:10px;color:var(--faint);margin-top:4px}
 .axis span:nth-child(2){display:flex;justify-content:space-between}
 
 .stack{display:flex;height:22px;border-radius:6px;overflow:hidden;gap:2px;background:var(--panel2)}
@@ -138,72 +153,99 @@ main{padding-block:20px 60px;display:flex;flex-direction:column;gap:18px}
 .legend .big{font-family:var(--f-display);font-stretch:70%;font-weight:800;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
 .legend .s{font-size:12px;color:var(--muted)}
 
-.next{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.gauge{position:relative;height:12px;border-radius:999px;background:var(--panel2);margin:14px 0 6px}
+.gauge i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,var(--crit),var(--warn) 40%,var(--ok) 70%);transform-origin:left}
+.gauge b{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--fg)}
+.gscale{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:10px;color:var(--faint)}
+
+.next{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
 .next div{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:10px}
 .next b{display:block;font-family:var(--f-display);font-stretch:70%;font-weight:800;font-size:28px;line-height:1}
 .next span{font-size:12px;color:var(--muted)}
 
 .list{display:flex;flex-direction:column;gap:6px}
 .li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:9px 11px;text-align:left;width:100%;transition:border-color .15s}
-.li:hover{border-color:var(--signal)}
+button.li:hover{border-color:var(--signal)}
 .li .t{min-width:0;overflow-wrap:anywhere}
 .li .t small{display:block;color:var(--muted);font-size:12px}
+.rank{font-family:var(--f-display);font-stretch:70%;font-weight:800;font-size:22px;color:var(--faint);width:26px;text-align:center}
+.pbar{width:64px;height:6px;border-radius:6px;background:var(--line);overflow:hidden}
+.pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--signal),var(--crit))}
 
 .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
-table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+table.compact{min-width:420px}
 th{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500}
 th button{background:none;border:0;padding:0;font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit}
 th button:hover{color:var(--fg)}
 td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
-tbody tr{cursor:pointer;transition:background .12s}
-tbody tr:hover{background:var(--panel2)}
+tbody tr.click{cursor:pointer;transition:background .12s}
+tbody tr.click:hover{background:var(--panel2)}
 tbody tr:last-child td{border-bottom:0}
 td.r,th.r{text-align:right}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.input,.select{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;min-width:0}
+.input,.select{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;min-width:0;width:100%}
+.filters .input{width:auto}
 .input::placeholder{color:var(--faint)}
-.input:focus,.select:focus,textarea:focus{outline:none;border-color:var(--signal)}
+.input:focus,.select:focus{outline:none;border-color:var(--signal)}
+.input.sm,.select.sm{padding:5px 8px;font-size:12px;border-radius:8px}
 
 .segs{display:inline-flex;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
 .segs button{background:none;border:0;border-radius:7px;padding:5px 11px;font-size:12px;font-weight:600;color:var(--muted)}
 .segs button[aria-pressed="true"]{background:var(--fg);color:var(--ink)}
+.segs.mini button{padding:3px 8px;font-size:11px}
+.segs.dec button[aria-pressed="true"][data-id$=":yes"]{background:var(--ok)}
+.segs.dec button[aria-pressed="true"][data-id$=":yesif"]{background:var(--warn)}
+.segs.dec button[aria-pressed="true"][data-id$=":no"]{background:var(--crit)}
 
-.weeks{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;align-items:end;height:170px;padding-top:18px;border-bottom:1px solid var(--line2);position:relative}
+.weeks{display:grid;gap:6px;align-items:end;height:160px;padding-top:18px;border-bottom:1px solid var(--line2)}
 .wk{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:4px;min-width:0}
 .wk i{display:block;width:100%;max-width:34px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,var(--signal),rgba(255,138,61,.35));transform-origin:bottom}
+.wk i.cold{background:linear-gradient(180deg,var(--reviewer),rgba(90,184,255,.3))}
 .wk i.zero{background:var(--line);height:2px!important}
 .wk span{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
-.wlabels{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;font-family:var(--f-mono);font-size:10px;color:var(--faint);margin-top:6px;text-align:center}
+.wlabels{display:grid;gap:6px;font-family:var(--f-mono);font-size:10px;color:var(--faint);margin-top:6px;text-align:center}
 
 .report{font-family:var(--f-mono);font-size:12.5px;line-height:1.7;white-space:pre-wrap;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px;max-height:420px;overflow:auto;margin:0}
-
 .tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
-.tile{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:12px}
+.tile{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:12px;min-width:0}
 .tile b{display:block;font-family:var(--f-display);font-stretch:68%;font-weight:800;font-size:32px;line-height:1.05;font-variant-numeric:tabular-nums}
 .tile span{font-size:12px;color:var(--muted)}
 .delta{font-family:var(--f-mono);font-size:11px;margin-left:4px}
 .delta.good{color:var(--ok)} .delta.bad{color:var(--crit)}
 
+.libgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.lib{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.lib dl{margin:0;display:grid;grid-template-columns:86px minmax(0,1fr);gap:4px 10px;font-size:12.5px}
+.lib dt{color:var(--muted);font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding-top:2px}
+.lib dd{margin:0;overflow-wrap:anywhere}
+
 /* Drawer */
 .scrim{position:fixed;inset:0;background:rgba(4,7,15,.6);z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
 .scrim.on{opacity:1;pointer-events:auto}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(580px,100%);background:var(--panel);border-left:1px solid var(--line2);z-index:60;transform:translateX(104%);transition:transform .32s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;box-shadow:-30px 0 60px -30px rgba(0,0,0,.6)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(620px,100%);background:var(--panel);border-left:1px solid var(--line2);z-index:60;transform:translateX(104%);transition:transform .32s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;box-shadow:-30px 0 60px -30px rgba(0,0,0,.6)}
 .drawer.on{transform:none}
 .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:calc(16px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) 14px 20px;border-bottom:1px solid var(--line)}
 .dhead h2{font-family:var(--f-display);font-stretch:72%;font-weight:800;font-size:26px;line-height:1.05;margin:2px 0 0;text-transform:uppercase;overflow-wrap:anywhere}
 .dbody{overflow-y:auto;padding:18px max(20px,env(safe-area-inset-right,0px)) calc(30px + env(safe-area-inset-bottom,0px)) 20px;display:flex;flex-direction:column;gap:18px}
 .x{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;width:36px;height:36px;flex:none;font-size:18px;line-height:1}
-.sec h4{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:500;display:flex;justify-content:space-between;gap:8px}
-.facts{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
-.facts b{color:var(--fg);font-weight:600}
+.sec h4{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:500;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.factgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.fact{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fact span{font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.fact b{font-weight:600;font-variant-numeric:tabular-nums}
+.fact input{background:none;border:0;padding:0;font-weight:600;width:100%;font-variant-numeric:tabular-nums}
+.fact input:focus{outline:none;color:var(--signal)}
 
 .stepper{overflow-x:auto;padding:4px 2px 6px}
 .stepper ol{list-style:none;margin:0;padding:0;display:flex;min-width:min-content}
 .stepper li{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1 0 64px;position:relative;font-size:11px;color:var(--faint);text-align:center}
+.stepper li.par{flex-basis:110px}
 .stepper li::before{content:"";position:absolute;top:8px;left:-50%;right:50%;height:2px;background:var(--line2)}
 .stepper li:first-child::before{display:none}
 .stepper li.done::before,.stepper li.cur::before{background:var(--signal)}
 .stepper li i{width:18px;height:18px;border-radius:50%;background:var(--panel2);border:2px solid var(--line2);position:relative;z-index:1}
+.stepper li.par i{width:30px;border-radius:9px}
 .stepper li.done i{background:var(--signal);border-color:var(--signal)}
 .stepper li.done{color:var(--muted)}
 .stepper li.cur{color:var(--fg);font-weight:600}
@@ -211,11 +253,30 @@ td.r,th.r{text-align:right}
 @keyframes ring{50%{box-shadow:0 0 0 7px rgba(255,138,61,.05)}}
 
 .actbox{background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.trk{border:1px solid var(--line2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--panel)}
+.trk.crit{border-color:rgba(255,92,122,.6)}
+.trk.warn{border-color:rgba(255,200,87,.5)}
+.slabar{height:6px;border-radius:6px;background:var(--line);position:relative;overflow:visible}
+.slabar i{position:absolute;left:0;top:0;bottom:0;border-radius:6px}
+.slabar i.ok{background:var(--ok)} .slabar i.warn{background:var(--warn)} .slabar i.crit{background:var(--crit)}
+.slabar u{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--faint)}
+.chase{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chase b{color:var(--fg)}
 .guard{border:1px solid var(--crit);background:var(--crit-soft);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px}
+.guard.info{border-color:var(--warn);background:var(--warn-soft)}
 .guard ul{margin:0;padding-left:18px}
-.dept{margin-bottom:10px}
-.dept .dh{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+.dept{margin-bottom:12px}
+.dept .dh{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px;gap:8px}
 .dept.cur .dh{color:var(--signal);font-weight:600}
+.ap{border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:8px;border:1px solid transparent}
+.ap:hover{background:var(--panel2)}
+.ap.st-yes .apl{color:var(--muted)}
+.ap.st-no{border-color:rgba(255,92,122,.4);background:var(--crit-soft)}
+.aprow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.apl{flex:1 1 200px;min-width:0}
+.apl small{display:block;font-size:11px;color:var(--faint);font-family:var(--f-mono)}
+.apl small.warn{color:var(--warn)}
+.apf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .chk{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:9px;padding:7px 8px;transition:background .12s}
 .chk:hover{background:var(--panel2)}
 .chk .box{width:18px;height:18px;border-radius:5px;border:2px solid var(--line2);flex:none;display:grid;place-items:center;margin-top:1px;transition:all .15s}
@@ -223,54 +284,66 @@ td.r,th.r{text-align:right}
 .chk.on .box::after{content:"";width:5px;height:9px;border:solid var(--ink);border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
 .chk .lt{flex:1;min-width:0}
 .chk.on .lt{color:var(--muted)}
-.chk small{display:block;font-size:11px;color:var(--faint);font-family:var(--f-mono)}
+.chk small{display:block;font-size:11.5px;color:var(--faint)}
 .tags{display:flex;gap:6px;flex-wrap:wrap}
 .tag{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);background:var(--panel2);border-radius:999px;padding:3px 6px 3px 10px;font-size:12px}
 .tag button{background:none;border:0;color:var(--muted);padding:0 4px;font-size:14px;line-height:1}
-.inline{display:flex;gap:8px;flex-wrap:wrap}
-.inline .input{flex:1 1 160px}
-textarea.input{width:100%;min-height:80px;resize:vertical}
-.timeline{display:flex;flex-direction:column;gap:2px;font-size:13px}
-.timeline div{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.fb{font-size:12px;border-left:2px solid var(--fast);padding:4px 0 4px 10px;margin-top:6px;color:var(--muted)}
+.fb b{color:var(--fg)}
+.inline{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.inline .input{flex:1 1 160px;width:auto}
+.inline .select{width:auto}
+textarea.input{min-height:72px;resize:vertical}
+.timeline{display:flex;flex-direction:column;font-size:13px}
+.timeline div{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line)}
 .timeline span:first-child{color:var(--muted);font-family:var(--f-mono);font-size:12px}
 .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
 .sw{width:42px;height:24px;border-radius:999px;background:var(--line2);border:0;position:relative;transition:background .2s;flex:none}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--fg);transition:transform .2s}
-.sw[aria-pressed="true"]{background:var(--crit)}
+.sw[aria-pressed="true"]{background:var(--signal)}
+.sw.bad[aria-pressed="true"]{background:var(--crit)}
 .sw[aria-pressed="true"]::after{transform:translateX(18px)}
 
 form{display:flex;flex-direction:column;gap:14px}
 label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);min-width:0}
-label.f .input{color:var(--fg);font-size:14px}
+label.f .input,label.f .select{color:var(--fg);font-size:14px}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-fieldset{border:1px solid var(--line2);border-radius:12px;padding:10px 10px 6px;margin:0}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+fieldset{border:1px solid var(--line2);border-radius:12px;padding:10px 10px 6px;margin:0;min-width:0}
 legend{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 6px}
-.cb{display:flex;align-items:center;gap:10px;padding:6px 4px;font-size:13px;cursor:pointer}
-.cb input{width:17px;height:17px;accent-color:var(--signal);flex:none}
+.cb{display:flex;align-items:flex-start;gap:10px;padding:6px 4px;font-size:13px;cursor:pointer}
+.cb input{width:17px;height:17px;accent-color:var(--signal);flex:none;margin-top:2px}
+.cb small{display:block;color:var(--faint);font-size:11.5px}
 .hint{font-size:12px;color:var(--faint);margin:-6px 0 0}
 .route{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px}
 .route span{border:1px solid var(--line2);border-radius:999px;padding:2px 9px;background:var(--panel2)}
 .route span.req{border-color:var(--signal);color:var(--signal)}
+.route span.par{border-color:var(--reviewer);color:var(--reviewer)}
 .route em{color:var(--faint);font-style:normal}
 .preview{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px}
 .preview ul{margin:0;padding-left:18px;color:var(--muted)}
 .preview ul b{color:var(--fg);font-weight:600}
+.mtx{min-width:640px}
+.mtx td{padding:6px 6px}
+.mtx .input{padding:6px 8px;font-size:12.5px}
+.mtx input[type=number]{width:70px}
 
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);opacity:0;background:var(--fg);color:var(--ink);font-weight:600;font-size:13px;padding:10px 16px;border-radius:10px;z-index:80;transition:all .25s;pointer-events:none;max-width:calc(100% - 32px)}
-.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);opacity:0;background:var(--fg);color:var(--ink);font-weight:600;font-size:13px;padding:8px 8px 8px 16px;border-radius:10px;z-index:80;transition:all .25s;pointer-events:none;max-width:calc(100% - 32px);display:flex;align-items:center;gap:12px}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{background:var(--ink);color:var(--fg);border:0;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600}
+.toast button[hidden]{display:none}
 
-/* Entry motion: only when a view is freshly opened */
-.view.enter .card,.view.enter .panel,.view.enter .li{animation:rise .5s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*35ms)}
-.view.enter .track i,.view.enter .stack i,.view.enter .abar i{animation:grow .9s cubic-bezier(.2,.7,.2,1) both;animation-delay:.15s}
+.view.enter .card,.view.enter .panel,.view.enter .li{animation:rise .5s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*30ms)}
+.view.enter .track i,.view.enter .stack i,.view.enter .abar i,.view.enter .gauge i,.view.enter .pbar i{animation:grow .9s cubic-bezier(.2,.7,.2,1) both;animation-delay:.15s}
 .view.enter .wk i{animation:growy .8s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*40ms)}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes growy{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
-@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}h1{font-size:20px}.live{display:none}}
-@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .val{font-size:32px}.grid2{grid-template-columns:minmax(0,1fr)}.sbar,.axis{grid-template-columns:84px minmax(0,1fr) 48px}.legend .big{font-size:22px}.topact .btn.ghost .lbl{display:none}}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.grid,.grid3{grid-template-columns:minmax(0,1fr)}h1{font-size:20px}.live{display:none}.factgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .val{font-size:32px}.grid2{grid-template-columns:minmax(0,1fr)}.sbar,.axis{grid-template-columns:84px minmax(0,1fr) 54px}.legend .big{font-size:22px}.topact .btn.ghost .lbl{display:none}.apf{grid-template-columns:minmax(0,1fr)}}
 </style>
 
 <header class="top">
@@ -285,7 +358,8 @@ legend{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transfo
     </div>
     <div class="topact">
       <span class="live"><i></i><span id="today"></span></span>
-      <button class="btn ghost" data-act="settings" type="button">⚙ <span class="lbl">Data &amp; SLAs</span></button>
+      <span class="qpill" id="qpill"></span>
+      <button class="btn ghost" data-act="settings" type="button">⚙ <span class="lbl">Matrix &amp; data</span></button>
       <button class="btn primary" data-act="new" type="button">+ New deal <kbd>N</kbd></button>
     </div>
   </div>
@@ -301,13 +375,14 @@ legend{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transfo
 
 <div class="scrim" id="scrim" data-act="close"></div>
 <aside class="drawer" id="drawer" aria-hidden="true"></aside>
-<div class="toast" id="toast" role="status"></div>
+<div class="toast" id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo" data-act="undo" type="button" hidden>Undo</button></div>
 <datalist id="excs"></datalist>
 <datalist id="reps"></datalist>
 
 <script>
 (function(){
-const DAY=864e5;
+"use strict";
+const DAY=864e5,HR=36e5;
 const STAGES=[
   {id:'intake',short:'Intake',name:'Deal Request',dept:'Sales / PSS',always:true},
   {id:'psops',short:'PS Ops',name:'Operational Approvals',dept:'PS Sales Ops'},
@@ -320,108 +395,238 @@ const STAGES=[
   {id:'booked',short:'Booked',name:'Deal Booked',dept:'',always:true}
 ];
 const SMAP=Object.fromEntries(STAGES.map(s=>[s.id,s]));
+const WORK=STAGES.filter(s=>s.id!=='booked').map(s=>s.id);
+const PAR=['acs','legal','credit'];
 const TRIG={
   pricing:{label:'Non-standard pricing or discount',ap:[['psops','Pricing approval']]},
   travel:{label:'Customer travel policy',ap:[['psops','Customer travel policy approval']]},
-  terms:{label:'Non-standard deal terms',ap:[['psops','Non-standard terms approval'],['legal','Legal review of non-standard terms']]},
+  terms:{label:'Non-standard contract terms',ap:[['psops','Non-standard terms approval'],['legal','Legal review of non-standard terms']]},
   sow:{label:'PSD / SOW involved',ap:[['psops','PSD/SOW review & approval'],['acs','Project scope review'],['legal','PSD/SOW legal review']]},
   services:{label:'Professional services pricing',ap:[['acs','Service pricing validated'],['acs','Scope and pricing match the deal']]},
   payment:{label:'Non-standard payment terms',ap:[['credit','Payment terms approval']]},
   billing:{label:'Billing cycle change',ap:[['credit','Billing cycle change approval']]}
 };
 const ALWAYS=[['ra','Revenue impact reviewed & RA guidelines met'],['cops','Signatures routed, tracked & filed'],['om','Booking documentation validated']];
-const INTAKE=['Customer requirements documented','Quote / pricing sheet attached','Deal structure summary','Billing entity & contacts','Target close date'];
-const COMMON_EXC=['Net 60 payment','Net 90 payment','Quarterly billing','Travel cap waived','Ramp pricing','Custom acceptance criteria','Custom SLA','Price hold','Termination for convenience'];
-const SLA_DEFAULT={intake:1,psops:2,acs:2,legal:3,credit:2,ra:1,cops:2,om:1};
+const INTAKE=[
+  ['Commercial basics','Account, products, term length, deal value'],
+  ['Customer ask','What is non-standard and why the customer needs it'],
+  ['Scope & delivery','SOW or services scope, if any'],
+  ['Economics','Quote, discount, payment and billing terms'],
+  ['Context','Competition, close-date driver, deal stage'],
+  ['Evidence','Quote file, redlines and customer emails attached to the opp']
+];
+const CLOSEOUT=['Final quote matches the approved pricing','Final contract matches the approved terms','Every "yes if" condition is met','Approval trail attached to the opportunity','Contract deviations logged','Renewal-impacting terms flagged to CS / AM','Approval expiration dates checked'];
+const MISS=['Waiting on approver','Intake gaps / missing info','Customer changed the ask','Pricing rework','Redline back-and-forth','Desk capacity','Quarter-end volume','Other'];
+const LANES={fast:{l:'Fast',d:'Inside guardrails'},complex:{l:'Complex',d:'Multiple levers, within risk appetite'},exception:{l:'Exception',d:'Guardrail breach or high risk'}};
 const WHO={desk:'Desk',reviewer:'Reviewer',requestor:'Requestor'};
-const LS='ddcc.v1';
+const COMMON_EXC=['Net 60 payment','Net 90 payment','Quarterly billing','Travel cap waived','Ramp pricing','Custom acceptance criteria','Custom SLA','Price hold','Termination for convenience'];
+const LS='ddcc.v2';
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const onClaude=/claude/i.test(location.hostname);
 
 const uid=()=>Math.random().toString(36).slice(2,10);
 const now=()=>Date.now();
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=v=>v>=1e6?'$'+(v/1e6).toFixed(v>=1e7?0:1)+'M':'$'+Math.round(v/1e3)+'K';
-const dshort=t=>new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+const money=v=>!v?'$0':v>=1e6?'$'+(v/1e6).toFixed(v>=1e7?0:1)+'M':'$'+Math.round(v/1e3)+'K';
+const dshort=t=>t?new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—';
 const days=ms=>ms/DAY;
+const f1=n=>n==null||isNaN(n)?'—':n.toFixed(1);
 const median=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
 const pctl=(a,p)=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.ceil(p*s.length)-1)]};
+const iso=t=>{if(!t)return'';const z=new Date(t);return z.getFullYear()+'-'+String(z.getMonth()+1).padStart(2,'0')+'-'+String(z.getDate()).padStart(2,'0')};
+const fromIso=s=>s?new Date(s+'T17:00:00').getTime():null;
+function addMonths(d,n){const x=new Date(d);const day=x.getDate();const wasLast=day===new Date(x.getFullYear(),x.getMonth()+1,0).getDate();x.setDate(1);x.setMonth(x.getMonth()+n);const last=new Date(x.getFullYear(),x.getMonth()+1,0).getDate();x.setDate(wasLast?last:Math.min(day,last));return x}
+function defaultQEnd(){const d=new Date();const m=Math.floor(d.getMonth()/3)*3+2;return iso(new Date(d.getFullYear(),m+1,0).getTime())}
 
-function buildApprovals(trs){
-  const list=[],seen=new Set();
-  trs.forEach(t=>(TRIG[t]?.ap||[]).forEach(([dept,label])=>{const k=dept+'|'+label;if(!seen.has(k)){seen.add(k);list.push({id:uid(),dept,label,done:false,doneAt:null})}}));
-  ALWAYS.forEach(([dept,label])=>list.push({id:uid(),dept,label,done:false,doneAt:null}));
-  return list;
+function defSettings(){
+  const m=(approver,sla)=>({approver,backup:'',email:'',sla});
+  return{myName:'Clinton',triageHrs:4,parallel:true,qEnd:defaultQEnd(),
+    lanes:{fastDisc:10,excDisc:30,stdPay:30,excPay:90,mult:{fast:.5,complex:1,exception:1.5}},
+    matrix:{intake:m('Deal Desk',1),psops:m('PS Sales Ops queue',2),acs:m('ACS Pro Services lead',2),legal:m('Commercial Legal',3),credit:m('Credit team',2),ra:m('Revenue Assurance',1),cops:m('Contract Ops',2),om:m('Order Management',1)}};
 }
-const reqStages=d=>{const s=new Set(d.approvals.map(a=>a.dept));return STAGES.filter(x=>x.always||s.has(x.id)).map(x=>x.id)};
-const nextStage=d=>{const r=reqStages(d);return r[r.indexOf(d.stage)+1]};
-const lastEntry=d=>d.history[d.history.length-1].at;
-const inStage=d=>now()-lastEntry(d);
-const sla=s=>(state.sla[s]??SLA_DEFAULT[s]??2);
-const ratio=d=>d.bookedAt?0:days(inStage(d))/sla(d.stage);
-const tone=r=>r>=1?'crit':r>=.75?'warn':'ok';
-const cycleMs=d=>(d.bookedAt||now())-d.createdAt;
-function stageDur(d){const o={},h=d.history;for(let i=0;i<h.length;i++){if(h[i].stage==='booked')continue;const e=i+1<h.length?h[i+1].at:now();o[h[i].stage]=(o[h[i].stage]||0)+Math.max(0,e-h[i].at)}return o}
-function waitSplit(d){const o={desk:0,reviewer:0,requestor:0},w=d.waitLog,end=d.bookedAt||now();for(let i=0;i<w.length;i++){const e=i+1<w.length?w[i+1].at:end;o[w[i].who]+=Math.max(0,e-w[i].at)}return o}
-const waiting=d=>d.bookedAt?null:(d.waitLog[d.waitLog.length-1]||{}).who;
-const intakePct=d=>d.intake.filter(Boolean).length/INTAKE.length;
-const apprDone=d=>d.approvals.filter(a=>a.done).length;
-
-/* ---------- Sample data ---------- */
-function makeSample(){
-  let seed=11;const r=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646};
-  const t0=now();
-  const reps=['J. Alvarez','M. Chen','R. Okafor','S. Patel','T. Brooks'];
-  const accts=['Acct-Northwind','Acct-Halcyon','Acct-Meridian','Acct-Brightline','Acct-Copperleaf','Acct-Vantage','Acct-Summit','Acct-Lumen','Acct-Arcadia','Acct-Keystone','Acct-Redwood','Acct-Orion','Acct-Tidewater','Acct-Granite','Acct-Beacon','Acct-Fjord','Acct-Ironbark'];
-  const plan=['booked','booked','booked','booked','booked','booked','booked','booked','intake','psops','acs','legal','legal','credit','ra','cops','om'];
-  const base={intake:.8,psops:1.6,acs:1.8,legal:3.2,credit:1.4,ra:.7,cops:1.5,om:.6};
-  const need={psops:'pricing',acs:'sow',legal:'terms',credit:'payment'};
-  return plan.map((target,i)=>{
-    let trs=Object.keys(TRIG).filter(()=>r()<.32);
-    if(need[target]&&!trs.includes(need[target]))trs.push(need[target]);
-    if(!trs.length)trs.push('pricing');
-    const d={id:uid(),code:'DD-'+(2041+i),account:accts[i],rep:reps[i%reps.length],value:Math.round(60+r()*840)*1000,triggers:trs,approvals:buildApprovals(trs),intake:INTAKE.map(()=>r()>.2),history:[],waitLog:[],exceptions:[],notes:'',kickback:false,overrides:[],bookedAt:null,sample:true};
-    const route=reqStages(d);const ti=target==='booked'?route.length-1:route.indexOf(target);
-    const durs=route.slice(0,ti).map(s=>base[s]*(.4+r()*1.4)*DAY);
-    const cur=target==='booked'?0:SLA_DEFAULT[target]*(.25+r()*1.35)*DAY;
-    const lag=target==='booked'?(1+r()*75)*DAY:0;
-    let t=t0-durs.reduce((a,b)=>a+b,0)-cur-lag;d.createdAt=t;
-    route.slice(0,ti+1).forEach((s,k)=>{
-      d.history.push({stage:s,at:t});
-      if(s==='booked'){d.bookedAt=t;return}
-      const dur=k<ti?durs[k]:cur;
-      d.waitLog.push({who:'desk',at:t});
-      if(s==='intake'){if(r()<.55)d.waitLog.push({who:'requestor',at:t+dur*.3})}
-      else{d.waitLog.push({who:'reviewer',at:t+dur*.2});if(r()<.3)d.waitLog.push({who:'requestor',at:t+dur*.65})}
-      d.approvals.filter(a=>a.dept===s).forEach(a=>{if(k<ti||r()<.4){a.done=true;a.doneAt=t+dur*(k<ti?.9:.5)}});
-      t+=dur;
-    });
-    d.stage=route[ti];
-    if(target==='booked'){d.intake=INTAKE.map(()=>true);if(i===3)d.kickback=true}
-    if(trs.includes('payment'))d.exceptions.push(r()<.7?'Net 60 payment':'Net 90 payment');
-    if(trs.includes('billing'))d.exceptions.push('Quarterly billing');
-    if(trs.includes('travel'))d.exceptions.push('Travel cap waived');
-    if(trs.includes('pricing')&&r()<.45)d.exceptions.push('Ramp pricing');
-    if(trs.includes('terms'))d.exceptions.push('Custom acceptance criteria');
-    return d;
-  });
-}
+function mergeSettings(p){const d=defSettings();if(!p)return d;const o={...d,...p,lanes:{...d.lanes,...(p.lanes||{}),mult:{...d.lanes.mult,...((p.lanes||{}).mult||{})}},matrix:{...d.matrix}};WORK.forEach(s=>o.matrix[s]={...d.matrix[s],...((p.matrix||{})[s]||{})});return o}
 
 /* ---------- State ---------- */
 let state,canStore=true;
+const S=()=>state.settings;
 function load(){
-  try{const s=localStorage.getItem(LS);if(s){const p=JSON.parse(s);if(p&&Array.isArray(p.deals)){state=p;state.sla={...SLA_DEFAULT,...(p.sla||{})};return}}}catch(e){canStore=false}
-  state={deals:makeSample(),sla:{...SLA_DEFAULT},sample:true};
+  try{const s=localStorage.getItem(LS);if(s){const p=JSON.parse(s);if(p&&Array.isArray(p.deals)){state={deals:p.deals,library:p.library||[],settings:mergeSettings(p.settings)};return}}}catch(e){canStore=false}
+  state={deals:[],library:[],settings:defSettings()};
+  const smp=makeSample();state.deals=smp.deals;state.library=smp.library;
+  state.settings.matrix.psops.backup='PS Ops manager';state.settings.matrix.legal.backup='Legal on-call';state.settings.matrix.credit.backup='Credit manager';
 }
 function save(){try{localStorage.setItem(LS,JSON.stringify(state));canStore=true}catch(e){canStore=false}}
-const ui={tab:'board',mode:null,id:null,guard:false,confirmDel:false,confirmClear:false,sort:{k:'age',dir:-1},q:'',stageF:'all',statusF:'active',period:90};
+const ui={tab:'today',mode:null,id:null,guard:null,confirmDel:false,confirmClear:false,laneEdit:null,apOpen:null,escOpen:false,libId:null,sort:{k:'prio',dir:-1},q:'',stageF:'all',statusF:'active',laneF:'all',period:90,importRows:null};
 const byId=id=>state.deals.find(d=>d.id===id);
 
-/* ---------- Toast & copy ---------- */
-let tt;function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2200)}
-function copy(text,ok,fallbackEl){
-  try{navigator.clipboard.writeText(text).then(()=>toast(ok),()=>fb())}catch(e){fb()}
-  function fb(){if(fallbackEl){const r=document.createRange();r.selectNodeContents(fallbackEl);const s=getSelection();s.removeAllRanges();s.addRange(r)}toast('Copy blocked here. Text is selected, press Ctrl/Cmd+C.')}
+/* ---------- Deal model ---------- */
+const isBooked=d=>!!d.bookedAt;
+function buildApprovals(trs){
+  const list=[],seen=new Set();
+  trs.forEach(t=>(TRIG[t]?.ap||[]).forEach(([dept,label])=>{const k=dept+'|'+label;if(!seen.has(k)){seen.add(k);list.push(newAp(dept,label))}}));
+  ALWAYS.forEach(([dept,label])=>list.push(newAp(dept,label)));
+  return list;
 }
+function newAp(dept,label){return{id:uid(),dept,label,status:'open',cond:'',exp:null,by:'',at:null}}
+const cleared=a=>a.status==='yes'||a.status==='yesif';
+const apprDone=d=>d.approvals.filter(cleared).length;
+const openAppr=(d,st)=>d.approvals.filter(a=>a.dept===st&&!cleared(a));
+function reqStages(d){const s=new Set(d.approvals.map(a=>a.dept));return STAGES.filter(x=>x.always||s.has(x.id)).map(x=>x.id)}
+function steps(d){const r=reqStages(d),par=r.filter(s=>PAR.includes(s)),out=[];let placed=false;r.forEach(s=>{if(d.parallel&&par.length>=2&&PAR.includes(s)){if(!placed){out.push(par);placed=true}}else out.push([s])});return out}
+const openSegs=d=>d.segs.filter(s=>!s.end);
+function curStepIdx(d){const o=openSegs(d),st=steps(d);if(!o.length)return st.length-1;const i=st.findIndex(x=>x.includes(o[0].stage));return i<0?0:i}
+const curStages=d=>openSegs(d).map(s=>s.stage);
+const stageLabel=d=>isBooked(d)?'Booked':curStages(d).map(s=>SMAP[s].short).join(' + ');
+const waiting=d=>isBooked(d)?null:(d.waitLog[d.waitLog.length-1]||{}).who;
+function setWait(d,who,t){if(waiting(d)!==who)d.waitLog.push({who,at:t||now()})}
+function reqOverlap(d,a,b){let o=0;const w=d.waitLog;for(let i=0;i<w.length;i++){if(w[i].who!=='requestor')continue;const s=w[i].at,e=i+1<w.length?w[i+1].at:(d.bookedAt||now());o+=Math.max(0,Math.min(b,e)-Math.max(a,s))}return o}
+const activeMs=(d,a,b)=>Math.max(0,(b-a)-reqOverlap(d,a,b));
+const segActive=(d,s)=>activeMs(d,s.start,s.end||now());
+const slaFor=(d,st)=>Math.max(.25,(+S().matrix[st]?.sla||2)*(+S().lanes.mult[d.lane]||1));
+const segRatio=(d,s)=>days(segActive(d,s))/slaFor(d,s.stage);
+const ratio=d=>isBooked(d)?0:Math.max(0,...openSegs(d).map(s=>segRatio(d,s)));
+const tone=r=>r>=1?'crit':r>=.75?'warn':'ok';
+const clock0=d=>d.clockStart||null;
+const cycleDays=d=>clock0(d)?days(activeMs(d,clock0(d),d.bookedAt||now())):null;
+function stageDays(d){const o={};d.segs.forEach(s=>{if(s.stage==='booked')return;o[s.stage]=(o[s.stage]||0)+days(segActive(d,s))});return o}
+function waitSplit(d){const o={desk:0,reviewer:0,requestor:0},w=d.waitLog,end=d.bookedAt||now();for(let i=0;i<w.length;i++){const e=i+1<w.length?w[i+1].at:end;o[w[i].who]+=Math.max(0,e-w[i].at)}return o}
+const intakePct=d=>d.intake.filter(Boolean).length/INTAKE.length;
+const escLevel=r=>r>=1?100:r>=.8?80:r>=.5?50:0;
+function pendingEsc(d,s){const lv=escLevel(segRatio(d,s));if(!lv)return 0;return d.escal.some(e=>e.stage===s.stage&&e.level>=lv&&e.at>=s.start)?0:lv}
+function expiring(d){if(isBooked(d))return[];return d.approvals.filter(a=>cleared(a)&&a.exp&&(a.exp<(d.closeDate||Infinity)||a.exp-now()<7*DAY))}
+function parSaved(d){const sg=d.segs.filter(s=>PAR.includes(s.stage)&&s.end);if(!d.parallel||sg.length<2)return 0;const sum=sg.reduce((a,s)=>a+(s.end-s.start),0);const span=Math.max(...sg.map(s=>s.end))-Math.min(...sg.map(s=>s.start));return Math.max(0,days(sum-span))}
+
+function autoLane(d){
+  const L=S().lanes,t=d.triggers||[],disc=+d.discount||0,pay=+d.payDays||0;
+  if(disc>L.excDisc||pay>L.excPay||t.includes('terms')||t.length>=4)return'exception';
+  if(!t.length&&disc<=L.fastDisc&&pay<=L.stdPay)return'fast';
+  if(t.length===1&&t[0]==='pricing'&&disc<=L.fastDisc&&pay<=L.stdPay)return'fast';
+  return'complex';
+}
+function laneWhy(d){
+  const L=S().lanes,t=d.triggers||[],disc=+d.discount||0,pay=+d.payDays||0,r=[];
+  if(disc>L.excDisc)r.push(`discount ${disc}% is over the ${L.excDisc}% exception line`);
+  if(pay>L.excPay)r.push(`payment terms of ${pay} days exceed ${L.excPay}`);
+  if(t.includes('terms'))r.push('non-standard contract terms');
+  if(t.length>=4)r.push(`${t.length} non-standard levers`);
+  if(r.length)return r.join(', ');
+  const l=autoLane(d);
+  if(l==='fast')return'inside guardrails';
+  return `${t.length} lever${t.length===1?'':'s'}, within risk appetite`;
+}
+
+/* medians (cached per render) */
+let MED=null;
+function meds(){if(MED)return MED;const per={};state.deals.forEach(d=>d.segs.forEach(s=>{if(s.end&&s.stage!=='booked')(per[s.stage]=per[s.stage]||[]).push(days(segActive(d,s)))}));MED={};WORK.forEach(s=>{const m=median(per[s]||[]);MED[s]=m!=null&&(per[s]||[]).length>=3?m:+S().matrix[s].sla});return MED}
+function remaining(d){
+  if(isBooked(d))return 0;const st=steps(d),i=curStepIdx(d),m=meds();
+  let tot=Math.max(0,...openSegs(d).map(s=>Math.max(.25,m[s.stage]-days(segActive(d,s)))));
+  for(let k=i+1;k<st.length;k++){if(st[k][0]==='booked')break;tot+=Math.max(...st[k].map(s=>m[s]))}
+  return tot;
+}
+function closeRisk(d){if(isBooked(d)||!d.closeDate)return null;const left=days(d.closeDate-now()),rem=remaining(d);return{t:left<rem?'crit':left<rem+2?'warn':'ok',left,rem}}
+function prio(d){
+  const vmax=Math.max(1,...state.deals.filter(x=>!isBooked(x)).map(x=>x.value||0));
+  const r=Math.min(1.5,ratio(d)),left=d.closeDate?days(d.closeDate-now()):60,urg=Math.max(0,Math.min(1,1-left/30)),cr=closeRisk(d);
+  let s=r*40+urg*30+((d.value||0)/vmax)*20+(d.lane==='exception'?10:d.lane==='complex'?5:0);
+  if(cr&&cr.t==='crit')s+=15;if(waiting(d)==='requestor')s-=12;if(!d.ackAt)s+=10;
+  return Math.max(0,Math.min(100,s));
+}
+
+/* quarter */
+function quarter(){let e=new Date((S().qEnd||defaultQEnd())+'T23:59:59');if(isNaN(e))e=new Date(defaultQEnd()+'T23:59:59');let g=0;while(e.getTime()<now()&&g++<40)e=addMonths(e,3);const s=addMonths(e,-3);return{start:s.getTime(),end:e.getTime(),left:Math.max(0,Math.ceil((e.getTime()-now())/DAY))}}
+function qEndsPast(n){const q=quarter(),out=[];for(let k=0;k<=n;k++)out.push(addMonths(new Date(q.end),-3*k).getTime());return out}
+function isQE(t){return qEndsPast(8).some(e=>t<=e&&t>e-15*DAY)}
+function qeDelta(){const a=[],b=[];state.deals.filter(isBooked).forEach(d=>{const c=cycleDays(d);if(c!=null)(isQE(d.bookedAt)?a:b).push(c)});const ma=median(a),mb=median(b);return{ma,mb,na:a.length,nb:b.length,r:ma!=null&&mb?ma/mb:null}}
+
+/* ---------- Sample data ---------- */
+function makeSample(){
+  let seed=29;const r=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646};
+  const t0=now();
+  const reps=['J. Alvarez','M. Chen','R. Okafor','S. Patel','T. Brooks'];
+  const accts=['Acct-Northwind','Acct-Halcyon','Acct-Meridian','Acct-Brightline','Acct-Copperleaf','Acct-Vantage','Acct-Summit','Acct-Lumen','Acct-Arcadia','Acct-Keystone','Acct-Redwood','Acct-Orion','Acct-Tidewater','Acct-Granite','Acct-Beacon','Acct-Fjord','Acct-Ironbark','Acct-Solstice','Acct-Quarry','Acct-Wavecrest','Acct-Larkspur','Acct-Cobalt'];
+  const plan=['booked','booked','booked','booked','booked','booked','booked','booked','booked','booked','intake','intake','psops','par','acs','legal','credit','ra','cops','om','om','legal'];
+  const base={intake:.6,psops:1.6,acs:1.8,legal:2.8,credit:1.4,ra:.7,cops:1.4,om:.6};
+  const mult={fast:.5,complex:1,exception:1.5};
+  const deals=plan.map((target,i)=>{
+    let trs=Object.keys(TRIG).filter(()=>r()<.28);
+    const need={psops:'pricing',acs:'services',legal:'sow',credit:'payment',par:'sow'}[target];
+    if(need&&!trs.includes(need))trs.push(need);
+    if(target==='par'&&!trs.includes('payment'))trs.push('payment');
+    if(i===0)trs=[];
+    const d={id:uid(),code:'DD-'+(2041+i),account:accts[i],rep:reps[i%reps.length],value:Math.round(60+r()*840)*1000,
+      discount:trs.includes('pricing')?Math.round(6+r()*30):Math.round(r()*8),payDays:trs.includes('payment')?(r()<.6?60:90+(r()<.3?30:0)):30,
+      triggers:trs,approvals:[],intake:INTAKE.map(()=>true),segs:[],waitLog:[],exceptions:[],notes:'',kickback:false,overrides:[],misses:[],escal:[],sendbacks:[],laneLog:[],
+      closeout:CLOSEOUT.map(()=>false),bookedAt:null,clockStart:null,ackAt:null,parallel:target==='booked'?i%2===0:true,laneAuto:true,sample:true};
+    d.approvals=buildApprovals(trs);
+    state.settings=state.settings||defSettings();
+    d.lane=autoLane(d);
+    const st=steps(d);
+    const booked=target==='booked';
+    let ti=booked?st.length-1:st.findIndex(x=>target==='par'?x.length>1:x.includes(target));
+    if(ti<0)ti=0;
+    const lag=booked?(1+r()*110)*DAY:0;
+    const bookAt=t0-lag;
+    const qe=booked&&isQE(bookAt)?1.55:1;
+    const durs=st.slice(0,ti).map(x=>{const o={};x.forEach(s=>o[s]=base[s]*mult[d.lane]*qe*(.45+r()*1.4)*DAY);return o});
+    const stepLen=durs.map(o=>Math.max(...Object.values(o)));
+    const curEl={};if(!booked)st[ti].forEach(s=>curEl[s]=(+defSettings().matrix[s].sla)*mult[d.lane]*(.25+r()*1.25)*DAY);
+    const curLen=booked?0:Math.max(...Object.values(curEl));
+    let t=(booked?bookAt:t0)-stepLen.reduce((a,b)=>a+b,0)-curLen;
+    d.createdAt=t;d.ackAt=t+r()*5*HR;
+    const incomplete=target==='intake'&&i===10;
+    if(incomplete){d.intake=INTAKE.map((_,k)=>k!==2&&k!==5);d.ackAt=t+1.5*HR}
+    if(target==='intake'&&i===11)d.ackAt=null;
+    d.clockStart=incomplete?null:t;
+    st.slice(0,ti+1).forEach((x,k)=>{
+      if(x[0]==='booked'){d.segs.push({stage:'booked',start:t,end:t});d.bookedAt=t;return}
+      const done=k<ti;
+      x.forEach(s=>{
+        const dur=done?durs[k][s]:curEl[s];
+        const finished=done||(x.length>1&&r()<.45&&s!==x[0]);
+        const seg={stage:s,start:t,end:finished?t+(done?dur:dur*.6):null};
+        d.segs.push(seg);
+        d.approvals.filter(a=>a.dept===s).forEach(a=>{if(finished||r()<.35){const yi=r()<.22;a.status=yi?'yesif':'yes';a.at=t+dur*.7;a.by=defSettings().matrix[s].approver;if(yi)a.cond=s==='credit'?'Customer signs auto-pay authorization':'Ramp stays within approved band';if(s==='psops'&&r()<.6)a.exp=(booked?bookAt:t0)+(booked?10:(4+r()*20))*DAY}});
+        if(done&&dur/DAY>(+defSettings().matrix[s].sla)*mult[d.lane])d.misses.push({stage:s,reason:MISS[Math.floor(r()*r()*MISS.length)],at:t+dur,over:dur/DAY-(+defSettings().matrix[s].sla)*mult[d.lane]});
+      });
+      const len=done?stepLen[k]:curLen;
+      d.waitLog.push({who:'desk',at:t});
+      if(s0(x)==='intake'){if(incomplete)d.waitLog.push({who:'requestor',at:t+len*.25})}
+      else{d.waitLog.push({who:'reviewer',at:t+len*.15});if(r()<.25)d.waitLog.push({who:'requestor',at:t+len*.6})}
+      t+=len;
+    });
+    if(incomplete){d.sendbacks.push({at:d.createdAt+2*HR,missing:[INTAKE[2][0],INTAKE[5][0]]})}
+    if(i===4||i===13)d.sendbacks.push({at:d.createdAt+HR,missing:[INTAKE[3][0]]});
+    if(booked){d.closeout=CLOSEOUT.map(()=>true);if(i===3)d.kickback=true;d.closeDate=bookAt+Math.round(r()*4)*DAY}
+    else{d.closeDate=t0+(i%3===0?(1+r()*3):(5+r()*30))*DAY;if(target==='om')d.closeout=CLOSEOUT.map((_,k)=>k<4)}
+    if(trs.includes('payment'))d.exceptions.push(d.payDays>=90?'Net 90 payment':'Net 60 payment');
+    if(trs.includes('billing'))d.exceptions.push('Quarterly billing');
+    if(trs.includes('travel'))d.exceptions.push('Travel cap waived');
+    if(trs.includes('pricing')&&r()<.5)d.exceptions.push('Ramp pricing');
+    if(trs.includes('terms'))d.exceptions.push('Custom acceptance criteria');
+    openSegs(d).forEach(s=>{const lv=escLevel(segRatio(d,s));if(lv>=80&&r()<.4)d.escal.push({stage:s.stage,level:lv,at:t0-HR})});
+    return d;
+  });
+  function s0(x){return x[0]}
+  const library=[
+    {id:uid(),name:'Net 60 payment',dept:'credit',preferred:'Net 30 from invoice date',fallback:'Net 60 for customers with an approved credit profile; no further extension',pushback:'Standard terms keep pricing where it is. Net 60 is available when credit approves the account.',escalate:'Anything past Net 60, or Net 60 with a discount over the fast-lane band',standard:false,sample:true},
+    {id:uid(),name:'Quarterly billing',dept:'credit',preferred:'Annual billing in advance',fallback:'Quarterly in advance with auto-pay',pushback:'Annual upfront is what this price assumes. Quarterly works with auto-pay on file.',escalate:'Monthly billing or billing in arrears',standard:false,sample:true},
+    {id:uid(),name:'Travel cap waived',dept:'psops',preferred:'Travel billed at actuals within the customer travel policy',fallback:'Fixed travel cap per trip agreed in the SOW',pushback:'A fixed cap protects both sides. Uncapped travel needs PS Ops sign-off.',escalate:'Uncapped travel or travel absorbed into fixed fees',standard:true,sample:true}
+  ];
+  return{deals,library};
+}
+
+/* ---------- Undo, toast, copy ---------- */
+const undoStack=[];
+function snap(){try{undoStack.push(JSON.stringify(state));if(undoStack.length>30)undoStack.shift()}catch(e){}}
+function undo(){const s=undoStack.pop();if(!s){toast('Nothing to undo');return}state=JSON.parse(s);save();MED=null;renderAll(false);toast('Undone')}
+let tt;function toast(m,withUndo){document.getElementById('toastMsg').textContent=m;document.getElementById('toastUndo').hidden=!withUndo;const el=document.getElementById('toast');el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),withUndo?5000:2400)}
+function copy(text,ok,fallbackEl){
+  const fb=()=>{if(fallbackEl){const r=document.createRange();r.selectNodeContents(fallbackEl);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Copy is blocked here. The text is selected, so press Ctrl/Cmd+C.')}else{showCopyBox(text)}};
+  try{navigator.clipboard.writeText(text).then(()=>toast(ok),fb)}catch(e){fb()}
+}
+function showCopyBox(text){const el=document.getElementById('drawer');const box=document.createElement('div');box.className='guard info';box.innerHTML='<b>Copy is blocked here. Select the text below and press Ctrl/Cmd+C.</b><textarea class="input" style="min-height:160px" readonly></textarea>';box.querySelector('textarea').value=text;const body=el.querySelector('.dbody');if(body&&ui.mode){body.prepend(box);box.querySelector('textarea').select()}else toast('Copy is blocked in this browser.')}
+function act(msg,fn,anim){snap();fn();save();MED=null;renderAll(!!anim);if(msg)toast(msg,true)}
 
 /* ---------- Count-up ---------- */
 const FMT={int:n=>Math.round(n).toLocaleString(),d1:n=>n.toFixed(1),pct:n=>Math.round(n)+'%',money:n=>money(n)};
@@ -434,193 +639,328 @@ function countUp(root,animate){
     requestAnimationFrame(step);
   });
 }
+const V=(n,f,s)=>n==null||isNaN(n)?'—':`<span data-n="${n}" data-f="${f}"${s?` data-s="${s}"`:''}>0</span>`;
+function flowEff(list){let a=0,t=0;list.forEach(d=>{const w=waitSplit(d);a+=w.desk;t+=w.desk+w.reviewer+w.requestor});return t?a/t*100:null}
 
 /* ---------- KPIs ---------- */
 function renderKPIs(animate){
-  const D=state.deals,act=D.filter(d=>!d.bookedAt),t90=now()-90*DAY,bk=D.filter(d=>d.bookedAt&&d.bookedAt>=t90);
-  const cyc=bk.map(d=>days(cycleMs(d)));const med=median(cyc),p90=pctl(cyc,.9);
-  const aging=act.filter(d=>ratio(d)>=1).length;
+  const D=state.deals,act=D.filter(d=>!isBooked(d)),t90=now()-90*DAY,bk=D.filter(d=>isBooked(d)&&d.bookedAt>=t90);
+  const cyc=bk.map(cycleDays).filter(x=>x!=null);const med=median(cyc),p90=pctl(cyc,.9);
+  const aging=act.filter(d=>ratio(d)>=1).length,risk=act.filter(d=>(closeRisk(d)||{}).t==='crit').length;
   const fp=bk.length?bk.filter(d=>!d.kickback).length/bk.length*100:null;
-  const ic=D.length?D.filter(d=>d.intake.every(Boolean)).length/D.length*100:null;
+  const fe=flowEff(bk.length?bk:D);
   const ov=D.reduce((a,d)=>a+d.overrides.length,0);
-  const val=bk.reduce((a,d)=>a+d.value,0);
-  const v=(n,f,s)=>n==null?'—':`<span data-n="${n}" data-f="${f}"${s?` data-s="${s}"`:''}>0</span>`;
+  const q=quarter(),qd=act.filter(d=>d.closeDate&&d.closeDate<=q.end);
   const tiles=[
-    {l:'Active deals',v:v(act.length,'int'),s:aging?`${aging} past SLA right now`:'Nothing past SLA',t:aging?'crit':'ok'},
-    {l:'Median cycle',v:v(med,'d1','days'),s:p90==null?'Booked deals, last 90 days':`Slowest 10% take ${p90.toFixed(1)}+ days`,t:med==null?'':med<=10?'ok':'warn'},
-    {l:'First-pass booking',v:v(fp,'pct'),s:`${bk.filter(d=>d.kickback).length} kicked back by Order Mgmt`,t:fp==null?'':fp>=95?'ok':fp>=85?'warn':'crit'},
-    {l:'Intake complete',v:v(ic,'pct'),s:'All five intake items in',t:ic==null?'':ic>=80?'ok':'warn'},
-    {l:'Approvals bypassed',v:v(ov,'int'),s:ov?'Each one is logged with a reason':'Zero is the standard',t:ov?'crit':'ok'},
-    {l:'Booked value · 90d',v:v(val,'money'),s:`${bk.length} deals booked`,t:''}
+    {l:'Active deals',v:V(act.length,'int'),s:aging||risk?`${aging} past SLA · ${risk} may miss close`:'Nothing past SLA',t:aging||risk?'crit':'ok'},
+    {l:'Median cycle',v:V(med,'d1','days'),s:p90==null?'Booked deals, last 90 days':`Slowest 10% take ${p90.toFixed(1)}+ days`,t:med==null?'':med<=10?'ok':'warn'},
+    {l:'First-pass booking',v:V(fp,'pct'),s:`${bk.filter(d=>d.kickback).length} kicked back by Order Mgmt`,t:fp==null?'':fp>=95?'ok':fp>=85?'warn':'crit'},
+    {l:'Flow efficiency',v:V(fe,'pct'),s:'Desk-held time ÷ total. 40%+ is strong',t:fe==null?'':fe>=40?'ok':fe>=25?'warn':'crit'},
+    {l:'Approvals bypassed',v:V(ov,'int'),s:ov?'Each one logged with a reason':'Zero is the standard',t:ov?'crit':'ok'},
+    {l:'Quarter-end',v:V(q.left,'int','days'),s:`${qd.length} active deals target this quarter`,t:q.left<=15?'warn':''}
   ];
   const el=document.getElementById('kpis');
   el.innerHTML=tiles.map(x=>`<div class="kpi"><div class="lab"><i class="${x.t}"></i>${x.l}</div><div class="val">${x.v}</div><div class="sub">${esc(x.s)}</div></div>`).join('');
   countUp(el,animate);
+  const qp=document.getElementById('qpill');qp.className='qpill'+(q.left<=15?' hot':'');qp.innerHTML=`Q-end <b>${q.left}d</b>${q.left<=15?' · surge':''}`;
 }
 
 /* ---------- Tabs ---------- */
-const TABS=[['board','Flow board'],['ledger','Deal ledger'],['radar','Bottleneck radar'],['exceptions','Exception library'],['impact','Impact report']];
+const TABS=[['today','Today'],['board','Flow board'],['ledger','Deal ledger'],['radar','Bottleneck radar'],['playbook','Playbook'],['impact','Impact report']];
 function renderTabs(){
-  const act=state.deals.filter(d=>!d.bookedAt).length;
-  const counts={board:act,ledger:state.deals.length,radar:state.deals.filter(d=>!d.bookedAt&&ratio(d)>=1).length,exceptions:excGroups().filter(g=>g.deals.length>=3).length,impact:''};
-  document.getElementById('tabs').innerHTML=TABS.map(([id,l],i)=>`<button class="tab" role="tab" aria-selected="${ui.tab===id}" data-act="tab" data-id="${id}">${l}<span class="n">${counts[id]===''?'':counts[id]}</span></button>`).join('');
+  const A=state.deals.filter(d=>!isBooked(d));
+  const urgent=A.filter(d=>openSegs(d).some(s=>pendingEsc(d,s))||(closeRisk(d)||{}).t==='crit'||expiring(d).length||!d.ackAt).length;
+  const counts={today:[urgent,urgent>0],board:[A.length],ledger:[state.deals.length],radar:[A.filter(d=>ratio(d)>=1).length,A.some(d=>ratio(d)>=1)],playbook:[excGroups().filter(g=>g.deals.length>=3&&!libFor(g.tag)?.standard).length],impact:['']};
+  document.getElementById('tabs').innerHTML=TABS.map(([id,l])=>`<button class="tab" role="tab" aria-selected="${ui.tab===id}" data-act="tab" data-id="${id}">${l}<span class="n${counts[id][1]?' hot':''}">${counts[id][0]===''?'':counts[id][0]}</span></button>`).join('');
 }
 
-/* ---------- Views ---------- */
-function card(d,i){
-  if(d.bookedAt){
-    return `<button class="card" data-act="open" data-id="${d.id}" style="--i:${i}"><div class="row"><span class="code">${esc(d.code)}</span><span class="chip ok">${days(cycleMs(d)).toFixed(1)}d cycle</span></div><div class="acct">${esc(d.account)}</div><div class="row meta"><span class="num">${money(d.value)}</span><span>${dshort(d.bookedAt)}${d.kickback?' · kicked back':''}</span></div></button>`;
+/* ---------- Shared bits ---------- */
+const laneTag=l=>`<span class="lane ${l}">${LANES[l]?.l||l}</span>`;
+const laneVar=l=>`--lane:var(--${l})`;
+function riskChip(d){const c=closeRisk(d);if(!c)return'';if(c.t==='ok')return`<span class="chip mute">Close ${dshort(d.closeDate)}</span>`;return`<span class="chip ${c.t}">${c.left<0?'Close date passed':c.t==='crit'?'Likely misses close':'Tight to close'} · ${dshort(d.closeDate)}</span>`}
+function slaChip(d,s){const r=segRatio(d,s);return`<span class="chip ${tone(r)}">${f1(days(segActive(d,s)))}d / ${f1(slaFor(d,s.stage))}d</span>`}
+
+/* ---------- TODAY (huddle) ---------- */
+function huddleData(){
+  const A=state.deals.filter(d=>!isBooked(d));
+  const ranked=A.map(d=>({d,p:prio(d)})).sort((a,b)=>b.p-a.p);
+  const escs=[];A.forEach(d=>openSegs(d).forEach(s=>{const lv=pendingEsc(d,s);if(lv)escs.push({d,s,lv})}));escs.sort((a,b)=>b.lv-a.lv||segRatio(b.d,b.s)-segRatio(a.d,a.s));
+  const blocked=A.filter(d=>waiting(d)==='requestor');
+  const exp=[];A.forEach(d=>expiring(d).forEach(a=>exp.push({d,a})));exp.sort((a,b)=>a.a.exp-b.a.exp);
+  const risk=A.filter(d=>{const c=closeRisk(d);return c&&c.t!=='ok'}).sort((a,b)=>(closeRisk(a).left-closeRisk(a).rem)-(closeRisk(b).left-closeRisk(b).rem));
+  const ack=A.filter(d=>!d.ackAt);
+  return{A,ranked,escs,blocked,exp,risk,ack};
+}
+function reasons(d){const out=[];const r=ratio(d);if(r>=.5)out.push(`<span class="chip ${tone(r)}">${Math.round(r*100)}% SLA</span>`);const c=closeRisk(d);if(c&&c.t!=='ok')out.push(`<span class="chip ${c.t}">${c.left<0?'past close':Math.max(0,c.left).toFixed(0)+'d to close'}</span>`);if(!d.ackAt)out.push('<span class="chip warn">Not acknowledged</span>');if(waiting(d)==='requestor')out.push('<span class="chip mute">On rep</span>');out.push(laneTag(d.lane));return out.join('')}
+function viewToday(){
+  const H=huddleData(),q=quarter();
+  const li=(d,i,sub,right)=>`<button class="li" data-act="open" data-id="${d.id}" style="--i:${i}">${right[0]}<span class="t"><b>${esc(d.code)} · ${esc(d.account)}</b><small>${sub}</small></span>${right[1]||'<span>›</span>'}</button>`;
+  const queue=H.ranked.slice(0,8).map((x,i)=>`<button class="li" data-act="open" data-id="${x.d.id}" style="--i:${i}"><span class="rank">${i+1}</span><span class="t"><b>${esc(x.d.code)} · ${esc(x.d.account)} <span class="meta">${money(x.d.value)}</span></b><small>${stageLabel(x.d)} · waiting on ${WHO[waiting(x.d)]||'—'}</small><span class="chips" style="margin-top:5px">${reasons(x.d)}</span></span><span class="pbar" title="Priority ${Math.round(x.p)}"><i style="width:${x.p}%"></i></span></button>`).join('');
+  const escHtml=H.escs.slice(0,8).map((x,i)=>li(x.d,i,`${SMAP[x.s.stage].short} · ${f1(days(segActive(x.d,x.s)))}d of ${f1(slaFor(x.d,x.s.stage))}d · chase ${esc(S().matrix[x.s.stage].approver||'approver')}`,[`<span class="chip ${x.lv>=80?'crit':'warn'}">${x.lv===100?'Breached':x.lv+'%'}</span>`])).join('');
+  const blk=H.blocked.slice(0,6).map((x,i)=>{const w=x.waitLog[x.waitLog.length-1];return li(x,i,`On ${esc(x.rep||'rep')} for ${f1(days(now()-w.at))}d · ${x.sendbacks.length} send-back${x.sendbacks.length===1?'':'s'} · clock paused`,['<span class="who requestor">Rep</span>'])}).join('');
+  const ex=H.exp.slice(0,6).map((x,i)=>li(x.d,i,`${esc(x.a.label)} expires ${dshort(x.a.exp)}${x.d.closeDate&&x.a.exp<x.d.closeDate?` · before close ${dshort(x.d.closeDate)}`:''}`,[`<span class="chip ${x.a.exp<(x.d.closeDate||Infinity)?'crit':'warn'}">${Math.ceil(days(x.a.exp-now()))}d</span>`])).join('');
+  const rk=H.risk.slice(0,6).map((x,i)=>{const c=closeRisk(x);return li(x,i,`Close ${dshort(x.closeDate)} · ~${f1(c.rem)}d of work left · ${stageLabel(x)}`,[`<span class="chip ${c.t}">${c.left<0?'Passed':Math.max(0,c.left).toFixed(0)+'d left'}</span>`])}).join('');
+  const ak=H.ack.map((x,i)=>{const h=(now()-x.createdAt)/HR;return li(x,i,`Submitted ${f1(h)}h ago by ${esc(x.rep||'rep')} · triage SLA ${S().triageHrs}h`,[`<span class="chip ${h>S().triageHrs?'crit':'warn'}">${h>S().triageHrs?'Late':'New'}</span>`])}).join('');
+  // surge forecast
+  const wks=Math.max(1,Math.ceil((q.end-now())/(7*DAY)));const n=Math.min(13,wks);
+  const b=[...Array(n)].map((_,i)=>{const s=now()+i*7*DAY,e=i===n-1?q.end+1:s+7*DAY;return{s,c:H.A.filter(d=>d.closeDate&&d.closeDate>=s&&d.closeDate<e).length}});
+  const over=H.A.filter(d=>d.closeDate&&d.closeDate<now()).length;
+  const mx=Math.max(1,...b.map(x=>x.c));
+  const inQ=H.A.filter(d=>d.closeDate&&d.closeDate<=q.end);
+  const inQrisk=inQ.filter(d=>(closeRisk(d)||{}).t==='crit').length;
+  return `<div class="grid">
+    <div class="panel span2" style="--i:0"><div class="ph"><div><h3>Priority queue</h3><p class="note" style="margin-top:4px">Ranked by SLA risk, close-date pressure, deal size and lane. Work it top-down.</p></div><button class="btn sm primary" data-act="standup">Copy stand-up note</button></div>
+      <div class="list">${queue||'<p class="note">No active deals. Add one with New deal.</p>'}</div></div>
+    <div class="panel" style="--i:1"><div class="ph"><h3>Escalations due</h3><p class="note">Check in at 50%, escalate at 80%</p></div><div class="list">${escHtml||'<p class="note">Nothing needs an escalation right now.</p>'}</div></div>
+    <div class="panel" style="--i:2"><div class="ph"><h3>Likely to miss close</h3><p class="note">Work left vs days to close</p></div><div class="list">${rk||'<p class="note">Every dated deal has room to close on time.</p>'}</div></div>
+    <div class="panel" style="--i:3"><div class="ph"><h3>Waiting on reps</h3><p class="note">Clock paused while they fix intake</p></div><div class="list">${blk||'<p class="note">No deals are blocked on a rep.</p>'}</div></div>
+    <div class="panel" style="--i:4"><div class="ph"><h3>Expiring approvals</h3><p class="note">Within 7 days, or before close</p></div><div class="list">${ex||'<p class="note">No approvals are about to expire.</p>'}</div></div>
+    <div class="panel" style="--i:5"><div class="ph"><h3>Needs acknowledgment</h3><p class="note">Triage within ${S().triageHrs} hours</p></div><div class="list">${ak||'<p class="note">Every new request has been acknowledged.</p>'}</div></div>
+    <div class="panel" style="--i:6"><div class="ph"><h3>Quarter-end outlook</h3><p class="note">Closes ${dshort(q.end)} · set dates in Matrix &amp; data</p></div>
+      <div class="inline" style="gap:24px;align-items:flex-end"><div><div class="bignum">${V(q.left,'int','days')}</div><span class="note">left in quarter</span></div><div><div class="bignum">${V(inQ.length,'int')}</div><span class="note">deals targeting this quarter</span></div><div><div class="bignum" style="color:${inQrisk?'var(--crit)':'var(--fg)'}">${V(inQrisk,'int')}</div><span class="note">at risk</span></div></div>
+      <h4 class="eyebrow" style="margin:16px 0 0">Target closes per week${over?` · ${over} already past date`:''}</h4>
+      <div class="weeks" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${b.map((x,i)=>`<div class="wk"><span>${x.c||''}</span><i class="${x.c?'':'zero'}${i>=n-2?'':' cold'}" style="--i:${i};height:${x.c/mx*100}%"></i></div>`).join('')}</div>
+      <div class="wlabels" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${b.map((x,i)=>`<span>${i%2&&n>6?'':dshort(x.s)}</span>`).join('')}</div>
+    </div>
+  </div>`;
+}
+function standupText(){
+  const H=huddleData(),q=quarter(),d0=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const L=[`Deal Desk stand-up · ${d0}`,`Queue: ${H.A.length} active · ${H.A.filter(d=>ratio(d)>=1).length} past SLA · ${H.risk.filter(d=>closeRisk(d).t==='crit').length} likely to miss close`,'','Top priorities:'];
+  H.ranked.slice(0,5).forEach((x,i)=>L.push(`${i+1}. ${x.d.code} ${x.d.account} (${money(x.d.value)}): ${stageLabel(x.d)}, waiting on ${(WHO[waiting(x.d)]||'').toLowerCase()}${x.d.closeDate?`, closes ${dshort(x.d.closeDate)}`:''}`));
+  if(H.escs.length){L.push('','Escalations:');H.escs.slice(0,5).forEach(x=>L.push(`• ${x.d.code}: ${SMAP[x.s.stage].dept} at ${Math.round(segRatio(x.d,x.s)*100)}% of SLA, chasing ${S().matrix[x.s.stage].approver||'approver'}`))}
+  if(H.blocked.length){L.push('','Blocked on reps:');H.blocked.forEach(x=>L.push(`• ${x.code} (${x.rep||'rep'}): ${INTAKE.filter((_,i)=>!x.intake[i]).map(z=>z[0]).join(', ')||'awaiting rep response'}`))}
+  if(H.exp.length){L.push('','Expiring approvals:');H.exp.slice(0,5).forEach(x=>L.push(`• ${x.d.code}: ${x.a.label} expires ${dshort(x.a.exp)}`))}
+  L.push('',`Quarter-end: ${q.left} days left · ${H.A.filter(d=>d.closeDate&&d.closeDate<=q.end).length} deals targeting this quarter`);
+  return L.join('\n');
+}
+
+/* ---------- BOARD ---------- */
+function card(d,s,i){
+  if(!s){
+    return `<button class="card" data-act="open" data-id="${d.id}" style="--i:${i};${laneVar(d.lane)}"><div class="row"><span class="code">${esc(d.code)}</span><span class="chip ok">${f1(cycleDays(d))}d cycle</span></div><div class="acct">${esc(d.account)}</div><div class="row meta"><span class="num">${money(d.value)}</span><span>${dshort(d.bookedAt)}${d.kickback?' · kicked back':''}</span></div></button>`;
   }
-  const r=ratio(d),w=waiting(d),tot=d.approvals.length,dn=apprDone(d);
-  return `<button class="card" data-act="open" data-id="${d.id}" style="--i:${i}">
-    <div class="row"><span class="code">${esc(d.code)}</span><span class="chip ${tone(r)}">${days(inStage(d)).toFixed(1)}d / ${sla(d.stage)}d</span></div>
+  const w=waiting(d),tot=d.approvals.length,dn=apprDone(d),lv=pendingEsc(d,s),cr=closeRisk(d);
+  return `<button class="card" data-act="open" data-id="${d.id}" style="--i:${i};${laneVar(d.lane)}">
+    <div class="row"><span class="code">${esc(d.code)} ${laneTag(d.lane)}</span>${slaChip(d,s)}</div>
     <div class="acct">${esc(d.account)}</div>
     <div class="row meta"><span class="num">${money(d.value)} · ${esc(d.rep||'—')}</span>${w?`<span class="who ${w}">${WHO[w]}</span>`:''}</div>
     <div class="abar"><i style="width:${tot?dn/tot*100:0}%"></i></div>
-    <div class="row meta"><span>${dn}/${tot} approvals</span>${intakePct(d)<1?'<span class="chip warn">Intake gaps</span>':''}</div>
+    <div class="chips">${openSegs(d).length>1?'<span class="chip par">∥ parallel</span>':''}${lv?`<span class="chip ${lv>=80?'crit':'warn'}">${lv===100?'Breached':'Escalate '+lv+'%'}</span>`:''}${cr&&cr.t!=='ok'?`<span class="chip ${cr.t}">Close ${dshort(d.closeDate)}</span>`:''}${!d.clockStart?'<span class="chip warn">Clock not started</span>':''}${expiring(d).length?'<span class="chip warn">Approval expiring</span>':''}</div>
   </button>`;
 }
+function laneFilter(){return `<div class="segs">${[['all','All lanes'],['fast','Fast'],['complex','Complex'],['exception','Exception']].map(([v,l])=>`<button data-act="laneF" data-id="${v}" aria-pressed="${ui.laneF===v}">${l}</button>`).join('')}</div>`}
 function viewBoard(){
-  let k=0;
-  const cols=STAGES.map(s=>{
-    let items=state.deals.filter(d=>d.stage===s.id);const total=items.length;
-    if(s.id==='booked')items=items.sort((a,b)=>b.bookedAt-a.bookedAt).slice(0,6);else items.sort((a,b)=>ratio(b)-ratio(a));
-    const hot=s.id!=='booked'&&items.some(d=>ratio(d)>=1);
-    return `<section class="col${hot?' hot':''}"><header><div><span class="cname">${s.short}</span><span class="cdept">${s.dept||'Ready for revenue'}${s.id!=='booked'?` · SLA ${sla(s.id)}d`:''}</span></div><span class="ccount">${total}</span></header><div class="cards">${items.map(d=>card(d,k++)).join('')||'<p class="empty">Clear</p>'}</div></section>`;
+  let k=0;const LF=d=>ui.laneF==='all'||d.lane===ui.laneF;
+  const cols=STAGES.map(st=>{
+    let items;
+    if(st.id==='booked')items=state.deals.filter(d=>isBooked(d)&&LF(d)).sort((a,b)=>b.bookedAt-a.bookedAt);
+    else items=state.deals.filter(d=>!isBooked(d)&&LF(d)).map(d=>({d,s:openSegs(d).find(x=>x.stage===st.id)})).filter(x=>x.s).sort((a,b)=>segRatio(b.d,b.s)-segRatio(a.d,a.s));
+    const total=items.length;const shown=st.id==='booked'?items.slice(0,6):items;
+    const hot=st.id!=='booked'&&items.some(x=>segRatio(x.d,x.s)>=1);
+    return `<section class="col${hot?' hot':''}"><header><div><span class="cname">${st.short}</span><span class="cdept">${st.dept||'Ready for revenue'}${st.id!=='booked'?` · SLA ${S().matrix[st.id].sla}d`:''}</span></div><span class="ccount">${total}</span></header><div class="cards">${shown.map(x=>st.id==='booked'?card(x,null,k++):card(x.d,x.s,k++)).join('')||'<p class="empty">Clear</p>'}</div></section>`;
   }).join('');
-  return `<div class="board-wrap"><div class="board">${cols}</div></div>`;
+  return `<div style="display:flex;flex-direction:column;gap:12px"><div class="toolbar">${laneFilter()}<span class="note">SLA scales by lane: Fast ×${S().lanes.mult.fast}, Complex ×${S().lanes.mult.complex}, Exception ×${S().lanes.mult.exception}. Parallel reviews show in each column.</span></div><div class="board-wrap"><div class="board">${cols}</div></div></div>`;
 }
 
-const SORTS={code:d=>d.code,account:d=>d.account.toLowerCase(),rep:d=>(d.rep||'').toLowerCase(),value:d=>d.value,stage:d=>STAGES.findIndex(s=>s.id===d.stage),wait:d=>waiting(d)||'',age:d=>d.bookedAt?-1:ratio(d),cycle:d=>cycleMs(d),appr:d=>apprDone(d)/d.approvals.length};
+/* ---------- LEDGER ---------- */
+const SORTS={prio:d=>isBooked(d)?-1:prio(d),code:d=>d.code,account:d=>d.account.toLowerCase(),lane:d=>['fast','complex','exception'].indexOf(d.lane),rep:d=>(d.rep||'').toLowerCase(),value:d=>d.value||0,stage:d=>isBooked(d)?99:STAGES.findIndex(s=>s.id===curStages(d)[0]),wait:d=>waiting(d)||'',age:d=>isBooked(d)?-1:ratio(d),close:d=>d.closeDate||9e15,cycle:d=>cycleDays(d)??-1,appr:d=>apprDone(d)/Math.max(1,d.approvals.length)};
 function ledgerRows(){
   const q=ui.q.trim().toLowerCase();
-  let rows=state.deals.filter(d=>(ui.statusF==='all'||(ui.statusF==='active'?!d.bookedAt:!!d.bookedAt))&&(ui.stageF==='all'||d.stage===ui.stageF)&&(!q||[d.code,d.account,d.rep,...d.exceptions].join(' ').toLowerCase().includes(q)));
+  let rows=state.deals.filter(d=>(ui.statusF==='all'||(ui.statusF==='active'?!isBooked(d):isBooked(d)))&&(ui.stageF==='all'||(ui.stageF==='booked'?isBooked(d):curStages(d).includes(ui.stageF)))&&(ui.laneF==='all'||d.lane===ui.laneF)&&(!q||[d.code,d.account,d.rep,...d.exceptions].join(' ').toLowerCase().includes(q)));
   const f=SORTS[ui.sort.k];rows.sort((a,b)=>{const x=f(a),y=f(b);return(x>y?1:x<y?-1:0)*ui.sort.dir});
-  if(!rows.length)return `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No deals match. Try a different filter or add a deal.</td></tr>`;
-  return rows.map(d=>{const w=waiting(d);return `<tr data-act="open" data-id="${d.id}">
-    <td class="mono">${esc(d.code)}</td><td><b>${esc(d.account)}</b></td><td>${esc(d.rep||'—')}</td><td class="r num">${money(d.value)}</td>
-    <td>${SMAP[d.stage].short}</td><td>${w?`<span class="who ${w}">${WHO[w]}</span>`:'<span class="chip ok">Booked</span>'}</td>
-    <td class="r">${d.bookedAt?'—':`<span class="chip ${tone(ratio(d))}">${days(inStage(d)).toFixed(1)}d</span>`}</td>
-    <td class="r num">${days(cycleMs(d)).toFixed(1)}d</td><td class="r num">${apprDone(d)}/${d.approvals.length}</td></tr>`}).join('');
+  if(!rows.length)return `<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:30px">No deals match. Try a different filter or add a deal.</td></tr>`;
+  return rows.map(d=>{const w=waiting(d),r=ratio(d);return `<tr class="click" data-act="open" data-id="${d.id}">
+    <td class="mono">${esc(d.code)}</td><td><b>${esc(d.account)}</b></td><td>${laneTag(d.lane)}</td><td>${esc(d.rep||'—')}</td><td class="r num">${money(d.value)}</td>
+    <td>${stageLabel(d)}</td><td>${w?`<span class="who ${w}">${WHO[w]}</span>`:'<span class="chip ok">Booked</span>'}</td>
+    <td class="r">${isBooked(d)?'—':`<span class="chip ${tone(r)}">${Math.round(r*100)}%</span>`}</td>
+    <td>${isBooked(d)?dshort(d.closeDate):riskChip(d)||'—'}</td>
+    <td class="r num">${cycleDays(d)==null?'<span class="chip warn">Not started</span>':f1(cycleDays(d))+'d'}</td><td class="r num">${apprDone(d)}/${d.approvals.length}</td></tr>`}).join('');
 }
 function viewLedger(){
   const th=(k,l,r)=>`<th class="${r?'r':''}"><button data-act="sort" data-id="${k}">${l}${ui.sort.k===k?(ui.sort.dir>0?' ↑':' ↓'):''}</button></th>`;
   return `<div class="panel" style="--i:0;display:flex;flex-direction:column;gap:12px">
     <div class="filters">
       <input class="input" id="lq" placeholder="Search ID, account, rep, exception" value="${esc(ui.q)}" style="flex:1 1 220px">
-      <select class="select" id="lstage"><option value="all">All stages</option>${STAGES.map(s=>`<option value="${s.id}"${ui.stageF===s.id?' selected':''}>${s.short}</option>`).join('')}</select>
+      <select class="select" id="lstage" style="width:auto"><option value="all">All stages</option>${STAGES.map(s=>`<option value="${s.id}"${ui.stageF===s.id?' selected':''}>${s.short}</option>`).join('')}</select>
       <div class="segs">${['active','booked','all'].map(s=>`<button data-act="statusF" data-id="${s}" aria-pressed="${ui.statusF===s}">${s[0].toUpperCase()+s.slice(1)}</button>`).join('')}</div>
+      ${laneFilter()}
+      <button class="btn sm" data-act="csvCopy">Copy CSV</button>${onClaude?'':'<button class="btn sm" data-act="csvDl">Download CSV</button>'}
     </div>
-    <div class="tablewrap"><table><thead><tr>${th('code','Deal')}${th('account','Account')}${th('rep','Rep')}${th('value','Value',1)}${th('stage','Stage')}${th('wait','Waiting on')}${th('age','In stage',1)}${th('cycle','Cycle',1)}${th('appr','Approvals',1)}</tr></thead><tbody id="lbody">${ledgerRows()}</tbody></table></div>
+    <div class="tablewrap"><table><thead><tr>${th('code','Deal')}${th('account','Account')}${th('lane','Lane')}${th('rep','Rep')}${th('value','Value',1)}${th('stage','Stage')}${th('wait','Waiting on')}${th('age','SLA used',1)}${th('close','Close date')}${th('cycle','Cycle',1)}${th('appr','Approvals',1)}</tr></thead><tbody id="lbody">${ledgerRows()}</tbody></table></div>
+    <p class="note">Default sort is priority. Cycle time runs from complete intake to booking and pauses while a deal waits on the rep.</p>
   </div>`;
 }
 
+/* ---------- RADAR ---------- */
 function viewRadar(){
-  const D=state.deals,act=D.filter(d=>!d.bookedAt);
-  const per={};D.forEach(d=>Object.entries(stageDur(d)).forEach(([s,ms])=>(per[s]=per[s]||[]).push(days(ms))));
+  const D=state.deals,act=D.filter(d=>!isBooked(d)),bk=D.filter(isBooked);
+  const per={};D.forEach(d=>Object.entries(stageDays(d)).forEach(([s,v])=>(per[s]=per[s]||[]).push(v)));
   const ss=STAGES.filter(s=>s.id!=='booked');
-  const meds=ss.map(s=>({s,m:median(per[s.id]||[]),n:(per[s.id]||[]).length}));
-  const mx=Math.max(1,...meds.map(x=>x.m||0),...ss.map(s=>sla(s.id)))*1.12;
-  const worst=meds.filter(x=>x.m!=null).sort((a,b)=>b.m/sla(b.s.id)-a.m/sla(a.s.id))[0];
-  const bars=meds.map(x=>`<div class="sbar"><span class="sl">${x.s.short}</span><div class="track" title="SLA ${sla(x.s.id)} days">${x.m!=null?`<i class="${x.m>sla(x.s.id)?'crit':''}" style="width:${x.m/mx*100}%"></i>`:''}<b style="left:${sla(x.s.id)/mx*100}%"></b></div><span class="sv">${x.m!=null?x.m.toFixed(1)+'d':'—'}</span></div>`).join('');
+  const mm=ss.map(s=>({s,m:median(per[s.id]||[]),n:(per[s.id]||[]).length}));
+  const mx=Math.max(1,...mm.map(x=>x.m||0),...ss.map(s=>+S().matrix[s.id].sla))*1.12;
+  const worst=mm.filter(x=>x.m!=null).sort((a,b)=>b.m/S().matrix[b.s.id].sla-a.m/S().matrix[a.s.id].sla)[0];
+  const bars=mm.map(x=>{const sl=+S().matrix[x.s.id].sla;return `<div class="sbar"><span class="sl">${x.s.short}</span><div class="track" title="Base SLA ${sl} days">${x.m!=null?`<i class="${x.m>sl?'crit':''}" style="width:${x.m/mx*100}%"></i>`:''}<b style="left:${sl/mx*100}%"></b></div><span class="sv">${x.m!=null?x.m.toFixed(1)+'d':'—'}</span></div>`}).join('');
+  // lanes
+  const laneRows=Object.keys(LANES).map(l=>{const b=bk.filter(d=>d.lane===l).map(cycleDays).filter(x=>x!=null);const a=act.filter(d=>d.lane===l);return `<tr><td>${laneTag(l)} <span class="note">${LANES[l].d}</span></td><td class="r num">${a.length}</td><td class="r num">${b.length}</td><td class="r num">${f1(median(b))}d</td><td class="r num">${f1(pctl(b,.9))}d</td><td class="r num">×${S().lanes.mult[l]}</td></tr>`}).join('');
+  // wait split
   const ws={desk:0,reviewer:0,requestor:0};D.forEach(d=>{const w=waitSplit(d);for(const k in ws)ws[k]+=w[k]});
   const wt=ws.desk+ws.reviewer+ws.requestor||1;const top=Object.keys(ws).sort((a,b)=>ws[b]-ws[a])[0];
-  const advice={requestor:'Requestor wait is the biggest share. Push back at intake: no clock starts until all five intake items are in, and coach the reps who submit incomplete requests.',reviewer:'Reviewer wait is the biggest share. Route Legal and Credit in parallel when both are needed, and agree on turnaround SLAs with each department.',desk:'Desk time is the biggest share. Template your routing emails, batch similar approvals, and pre-build SOW checklists.'};
-  const nextC={};act.forEach(d=>{const n=nextStage(d);if(n&&n!=='booked')nextC[n]=(nextC[n]||0)+1});
-  const aging=act.filter(d=>ratio(d)>=.75).sort((a,b)=>ratio(b)-ratio(a));
-  const reps={};D.forEach(d=>{const k=d.rep||'Unassigned';const r=reps[k]=reps[k]||{n:0,ic:0,rq:0,kb:0};r.n++;r.ic+=intakePct(d);r.rq+=days(waitSplit(d).requestor);if(d.kickback)r.kb++});
-  const repRows=Object.entries(reps).map(([k,r])=>({k,n:r.n,ic:r.ic/r.n*100,rq:r.rq/r.n,kb:r.kb})).sort((a,b)=>a.ic-b.ic);
+  const fe=flowEff(D);
+  const advice={requestor:'Requestor wait is the biggest share. Hold the intake gate, use Send back, and coach the reps at the bottom of the scorecard.',reviewer:'Reviewer wait is the biggest share. Run Legal, Credit and ACS in parallel, chase at 50% of SLA, and escalate at 80%.',desk:'Desk time is the biggest share. Use the chase templates, batch similar approvals, and move recurring exceptions into the fallback library.'};
+  // parallel
+  const pd=bk.filter(d=>d.parallel&&d.segs.filter(s=>PAR.includes(s.stage)).length>=2),sq=bk.filter(d=>!d.parallel||d.segs.filter(s=>PAR.includes(s.stage)).length<2);
+  const saved=D.reduce((a,d)=>a+parSaved(d),0);
+  const multiRev=sq.filter(d=>new Set(d.segs.filter(s=>PAR.includes(s.stage)).map(s=>s.stage)).size>=2);
+  // misses
+  const mc={};D.forEach(d=>d.misses.forEach(m=>{const k=m.reason||'Not recorded';mc[k]=(mc[k]||0)+1}));
+  const ml=Object.entries(mc).sort((a,b)=>b[1]-a[1]);const mt=ml.reduce((a,x)=>a+x[1],0);const mmx=Math.max(1,...ml.map(x=>x[1]));let cum=0;
+  const pareto=ml.map(([k,v])=>{cum+=v;return `<div class="sbar"><span class="sl" title="${esc(k)}">${esc(k)}</span><div class="track"><i class="sig" style="width:${v/mmx*100}%"></i></div><span class="sv">${v} · ${Math.round(cum/mt*100)}%</span></div>`}).join('');
+  // qe
+  const Q=qeDelta();
+  // next
+  const nextC={};act.forEach(d=>{const st=steps(d),i=curStepIdx(d);(st[i+1]||[]).forEach(s=>{if(s!=='booked')nextC[s]=(nextC[s]||0)+1})});
+  // reps
+  const reps={};D.forEach(d=>{const k=d.rep||'Unassigned';const r=reps[k]=reps[k]||{n:0,ic:0,rq:0,kb:0,sb:0};r.n++;r.ic+=intakePct(d);r.rq+=days(waitSplit(d).requestor);r.sb+=d.sendbacks.length;if(d.kickback)r.kb++});
+  const repRows=Object.entries(reps).map(([k,r])=>({k,n:r.n,ic:r.ic/r.n*100,rq:r.rq/r.n,kb:r.kb,sb:r.sb})).sort((a,b)=>a.ic-b.ic||b.sb-a.sb);
   return `<div class="grid">
-    <div class="panel span2" style="--i:0"><div class="ph"><h3>Median days in each stage</h3><p class="note">White marker is your SLA. Red bars run past it. Includes deals still in progress.</p></div>
+    <div class="panel span2" style="--i:0"><div class="ph"><h3>Median days in each stage</h3><p class="note">White marker is the base SLA. Red runs past it. Time waiting on the rep is excluded.</p></div>
       ${bars}<div class="axis"><span></span><span><span>0d</span><span>${(mx/2).toFixed(1)}d</span><span>${mx.toFixed(1)}d</span></span><span></span></div>
-      ${worst?`<div class="insight"><b>${worst.s.short}</b> is your tightest constraint at ${worst.m.toFixed(1)} days against a ${sla(worst.s.id)}-day SLA. Fix this one first; improving anything else won't move total cycle time much.</div>`:''}
+      ${worst?`<div class="insight"><b>${worst.s.short}</b> is the tightest constraint at ${worst.m.toFixed(1)} days against a ${S().matrix[worst.s.id].sla}-day SLA. Fixing this stage moves total cycle time more than anything else.</div>`:''}
     </div>
-    <div class="panel" style="--i:1"><div class="ph"><h3>Where the clock goes</h3><p class="note">All tracked time, by who held the deal</p></div>
+    <div class="panel span2" style="--i:1"><div class="ph"><h3>Cycle time by lane</h3><p class="note">Median and slowest 10%, booked deals</p></div>
+      <div class="tablewrap" style="border:0;background:none"><table class="compact"><thead><tr><th>Lane</th><th class="r">Active</th><th class="r">Booked</th><th class="r">Median</th><th class="r">Slowest 10%</th><th class="r">SLA scale</th></tr></thead><tbody>${laneRows}</tbody></table></div>
+    </div>
+    <div class="panel" style="--i:2"><div class="ph"><h3>Where the clock goes</h3><p class="note">All tracked time, by who held the deal</p></div>
       <div class="stack">${['desk','reviewer','requestor'].map(k=>`<i class="${k}" style="flex:${ws[k]/wt}"></i>`).join('')}</div>
-      <div class="legend">${['desk','reviewer','requestor'].map(k=>`<div><span class="who ${k}">${WHO[k]} wait</span><span class="big">${Math.round(ws[k]/wt*100)}%</span><span class="s">${days(ws[k]).toFixed(0)} days total</span></div>`).join('')}</div>
+      <div class="legend">${['desk','reviewer','requestor'].map(k=>`<div><span class="who ${k}">${WHO[k]}</span><span class="big">${Math.round(ws[k]/wt*100)}%</span><span class="s">${days(ws[k]).toFixed(0)} days total</span></div>`).join('')}</div>
       <div class="insight">${advice[top]}</div>
     </div>
-    <div class="panel" style="--i:2"><div class="ph"><h3>Heading your way next</h3><p class="note">Active deals by the next department they need</p></div>
+    <div class="panel" style="--i:3"><div class="ph"><h3>Flow efficiency</h3><p class="note">Desk-held time ÷ total lead time</p></div>
+      <div class="bignum">${V(fe,'pct')}</div>
+      <div class="gauge"><i style="width:${Math.min(100,fe||0)}%"></i><b style="left:40%" title="40% target"></b></div>
+      <div class="gscale"><span>0%</span><span>15% typical</span><span>40% strong</span><span>100%</span></div>
+      <p class="note" style="margin-top:12px">Most teams run around 15%, so work waits about 85% of the time. Cutting wait time moves this faster than working faster.</p>
+    </div>
+    <div class="panel" style="--i:4"><div class="ph"><h3>Parallel review payoff</h3><p class="note">ACS, Legal and Credit at the same time</p></div>
+      <div class="inline" style="gap:24px;align-items:flex-end"><div><div class="bignum" style="color:var(--reviewer)">${V(saved,'d1','days')}</div><span class="note">saved vs running in sequence</span></div><div><div class="bignum">${V(pd.length,'int')}</div><span class="note">booked deals ran parallel</span></div></div>
+      <p class="note" style="margin-top:12px">Parallel deals median ${f1(median(pd.map(cycleDays).filter(x=>x!=null)))}d cycle · ${multiRev.length} booked deal${multiRev.length===1?'':'s'} ran multi-department review in sequence (median ${f1(median(multiRev.map(cycleDays).filter(x=>x!=null)))}d).</p>
+    </div>
+    <div class="panel" style="--i:5"><div class="ph"><h3>Quarter-end slowdown</h3><p class="note">Target: under 1.5×</p></div>
+      <div class="bignum" style="color:${Q.r==null?'var(--fg)':Q.r<1.5?'var(--ok)':'var(--crit)'}">${Q.r==null?'—':V(Q.r,'d1','×')}</div>
+      <p class="note" style="margin-top:8px">Median cycle in the last 15 days of a quarter: <b style="color:var(--fg)">${f1(Q.ma)}d</b> (${Q.na} deals) vs mid-quarter <b style="color:var(--fg)">${f1(Q.mb)}d</b> (${Q.nb} deals).</p>
+      ${Q.r!=null&&Q.r>=1.5?'<div class="insight">Quarter-end drags cycle time past the 1.5× line. Pre-clear the deals targeting quarter-end from the Today view, and give each department a volume heads-up two weeks out.</div>':''}
+    </div>
+    <div class="panel" style="--i:6"><div class="ph"><h3>Why SLAs get missed</h3><p class="note">Count · running share</p></div>
+      ${pareto||'<p class="note">No missed SLAs logged yet. When a stage runs late, the reason you pick lands here.</p>'}
+      ${ml.length?`<div class="insight"><b>${esc(ml[0][0])}</b> drives ${Math.round(ml[0][1]/mt*100)}% of misses. Make this month's process fix about this one.</div>`:''}
+    </div>
+    <div class="panel" style="--i:7"><div class="ph"><h3>Heading your way next</h3><p class="note">Active deals by the next department they need</p></div>
       <div class="next">${ss.filter(s=>s.id!=='intake').map(s=>`<div><b>${nextC[s.id]||0}</b><span>${s.short}</span></div>`).join('')}</div>
       <p class="note" style="margin-top:12px">Give each department a heads-up before the volume lands.</p>
     </div>
-    <div class="panel" style="--i:3"><div class="ph"><h3>Aging alerts</h3><p class="note">At 75%+ of SLA</p></div>
-      <div class="list">${aging.length?aging.slice(0,8).map((d,i)=>`<button class="li" data-act="open" data-id="${d.id}" style="--i:${i}"><span class="chip ${tone(ratio(d))}">${Math.round(ratio(d)*100)}%</span><span class="t"><b>${esc(d.code)} · ${esc(d.account)}</b><small>${SMAP[d.stage].short} · ${days(inStage(d)).toFixed(1)}d of ${sla(d.stage)}d · waiting on ${WHO[waiting(d)]||'—'}</small></span><span>›</span></button>`).join(''):'<p class="note">Every active deal is inside its SLA.</p>'}</div>
-    </div>
-    <div class="panel" style="--i:4"><div class="ph"><h3>Rep intake scorecard</h3><p class="note">Coach upstream</p></div>
-      <div class="tablewrap" style="border:0;background:none"><table style="min-width:380px"><thead><tr><th>Rep</th><th class="r">Deals</th><th class="r">Intake</th><th class="r">Req. wait</th><th class="r">Kickbacks</th></tr></thead><tbody>
-      ${repRows.map(r=>`<tr style="cursor:default"><td>${esc(r.k)}</td><td class="r num">${r.n}</td><td class="r"><span class="chip ${r.ic>=90?'ok':r.ic>=75?'warn':'crit'}">${Math.round(r.ic)}%</span></td><td class="r num">${r.rq.toFixed(1)}d</td><td class="r num">${r.kb}</td></tr>`).join('')}
+    <div class="panel span2" style="--i:8"><div class="ph"><h3>Rep intake scorecard</h3><p class="note">Coach upstream. Lowest intake first.</p></div>
+      <div class="tablewrap" style="border:0;background:none"><table class="compact"><thead><tr><th>Rep</th><th class="r">Deals</th><th class="r">Intake complete</th><th class="r">Send-backs</th><th class="r">Avg wait on rep</th><th class="r">Kickbacks</th></tr></thead><tbody>
+      ${repRows.map(r=>`<tr><td>${esc(r.k)}</td><td class="r num">${r.n}</td><td class="r"><span class="chip ${r.ic>=90?'ok':r.ic>=75?'warn':'crit'}">${Math.round(r.ic)}%</span></td><td class="r num">${r.sb}</td><td class="r num">${r.rq.toFixed(1)}d</td><td class="r num">${r.kb}</td></tr>`).join('')}
       </tbody></table></div>
     </div>
   </div>`;
 }
 
-function excGroups(){
-  const g={};state.deals.forEach(d=>d.exceptions.forEach(t=>{(g[t]=g[t]||[]).push(d)}));
-  return Object.entries(g).map(([tag,deals])=>({tag,deals})).sort((a,b)=>b.deals.length-a.deals.length);
-}
-function viewExceptions(){
-  const G=excGroups(),bk=state.deals.filter(d=>d.bookedAt),avgAll=bk.length?bk.reduce((a,d)=>a+days(cycleMs(d)),0)/bk.length:null;
-  const rows=G.map((g,i)=>{const b=g.deals.filter(d=>d.bookedAt);const avg=b.length?b.reduce((a,d)=>a+days(cycleMs(d)),0)/b.length:null;const diff=avg!=null&&avgAll!=null?avg-avgAll:null;const cand=g.deals.length>=3;
-    return `<div class="li" style="--i:${i};cursor:default;grid-template-columns:auto minmax(0,1fr) auto"><span class="chip ${cand?'warn':'mute'}">${g.deals.length}×</span><span class="t"><b>${esc(g.tag)}</b><small>${g.deals.map(d=>esc(d.code)).join(', ')}${diff!=null?` · booked deals ran ${diff>=0?'+':''}${diff.toFixed(1)}d vs average`:''}</small></span>${cand?`<button class="btn sm" data-act="proposal" data-id="${esc(g.tag)}">Draft proposal</button>`:'<span class="note">Watching</span>'}</div>`}).join('');
-  const cands=G.filter(g=>g.deals.length>=3).length;
+/* ---------- PLAYBOOK ---------- */
+const libFor=name=>state.library.find(x=>x.name.toLowerCase()===String(name).toLowerCase());
+function excGroups(){const g={};state.deals.forEach(d=>d.exceptions.forEach(t=>{const k=(libFor(t)||{}).name||t;(g[k]=g[k]||[]).push(d)}));return Object.entries(g).map(([tag,deals])=>({tag,deals})).sort((a,b)=>b.deals.length-a.deals.length)}
+function viewPlaybook(){
+  const G=excGroups(),bk=state.deals.filter(isBooked),avg=a=>{const c=a.map(cycleDays).filter(x=>x!=null);return c.length?c.reduce((s,x)=>s+x,0)/c.length:null};const avgAll=avg(bk);
+  const rows=G.map((g,i)=>{const a=avg(g.deals.filter(isBooked));const diff=a!=null&&avgAll!=null?a-avgAll:null;const cand=g.deals.length>=3;const L=libFor(g.tag);
+    const status=L?(L.standard?'<span class="chip ok">Standardized</span>':'<span class="chip par">In library</span>'):'';
+    return `<div class="li" style="--i:${i};cursor:default"><span class="chip ${cand&&!(L&&L.standard)?'warn':'mute'}">${g.deals.length}×</span><span class="t"><b>${esc(g.tag)}</b> ${status}<small>${g.deals.slice(0,8).map(d=>esc(d.code)).join(', ')}${g.deals.length>8?'…':''}${diff!=null?` · booked deals ran ${diff>=0?'+':''}${diff.toFixed(1)}d vs average`:''}</small></span><span class="inline">${L?`<button class="btn sm" data-act="libEdit" data-id="${L.id}">Edit play</button>`:`<button class="btn sm" data-act="libNew" data-id="${esc(g.tag)}">Add play</button>`}${cand&&!(L&&L.standard)?`<button class="btn sm primary" data-act="proposal" data-id="${esc(g.tag)}">Draft proposal</button>`:''}</span></div>`}).join('');
+  const cands=G.filter(g=>g.deals.length>=3&&!(libFor(g.tag)||{}).standard).length;
+  const lib=state.library.map((L,i)=>`<div class="lib panel" style="--i:${i};padding:12px;border-radius:12px;background:var(--panel2);border-color:var(--line2)"><div class="row"><b>${esc(L.name)}</b><span class="inline" style="gap:6px">${L.standard?'<span class="chip ok">Standard option</span>':''}<span class="chip mute">${SMAP[L.dept]?.short||'—'}</span></span></div>
+    <dl><dt>Preferred</dt><dd>${esc(L.preferred)||'—'}</dd><dt>Fallback</dt><dd>${esc(L.fallback)||'—'}</dd><dt>Pushback</dt><dd>${esc(L.pushback)||'—'}</dd><dt>Escalate if</dt><dd>${esc(L.escalate)||'—'}</dd></dl>
+    <div class="inline"><button class="btn sm" data-act="libEdit" data-id="${L.id}">Edit</button><button class="btn sm" data-act="libCopy" data-id="${L.id}">Copy pushback</button></div></div>`).join('');
+  const m=S().matrix;
+  const trigRows=Object.entries(TRIG).map(([k,t])=>{const ds=[...new Set(t.ap.map(a=>a[0]))];return `<tr><td><b>${t.label}</b></td><td>${ds.map(d=>`${SMAP[d].short}`).join(', ')}</td><td>${t.ap.map(a=>esc(a[1])).join('; ')}</td><td>${ds.map(d=>`${esc(m[d].approver||'—')}${m[d].backup?` <span class="note">(backup ${esc(m[d].backup)})</span>`:''}`).join('<br>')}</td><td class="r mono">${ds.map(d=>`${f1(m[d].sla*S().lanes.mult.fast)} / ${f1(m[d].sla)} / ${f1(m[d].sla*S().lanes.mult.exception)}`).join('<br>')}</td></tr>`}).join('');
+  const alwaysRows=['ra','cops','om'].map(d=>`<tr><td><b>Every deal</b></td><td>${SMAP[d].short}</td><td>${esc(ALWAYS.find(a=>a[0]===d)[1])}</td><td>${esc(m[d].approver||'—')}${m[d].backup?` <span class="note">(backup ${esc(m[d].backup)})</span>`:''}</td><td class="r mono">${f1(m[d].sla*S().lanes.mult.fast)} / ${f1(m[d].sla)} / ${f1(m[d].sla*S().lanes.mult.exception)}</td></tr>`).join('');
   return `<div class="grid">
     <div class="panel span2" style="--i:0"><div class="ph"><h3>Recurring exceptions</h3><p class="note">Three or more hits makes it a candidate to standardize</p></div>
       <div class="list">${rows||'<p class="note">No exceptions logged yet. Tag them on each deal as they come up.</p>'}</div>
-      ${cands?`<div class="insight"><b>${cands} exception${cands>1?'s':''}</b> keep coming back. Each one you turn into a pre-approved option removes a manual review from every future deal. That's the move from processing deals to shaping policy.</div>`:''}
+      ${cands?`<div class="insight"><b>${cands} exception${cands>1?'s':''}</b> keep coming back. Turning each into a pre-approved option removes a manual review from every future deal. That is the move from processing deals to shaping policy.</div>`:''}
+    </div>
+    <div class="panel span2" style="--i:1"><div class="ph"><div><h3>Terms &amp; fallback library</h3><p class="note" style="margin-top:4px">Preferred position, approved fallback, pushback language and the escalation point. It shows up on any deal tagged with the exception.</p></div><button class="btn sm primary" data-act="libNew" data-id="">+ Add play</button></div>
+      <div class="libgrid">${lib||'<p class="note">No plays yet.</p>'}</div>
+    </div>
+    <div class="panel span2" style="--i:2"><div class="ph"><div><h3>Approval matrix</h3><p class="note" style="margin-top:4px">Deviation → department → approver → SLA (Fast / Complex / Exception, in days). Edit names and SLAs in Matrix &amp; data.</p></div><button class="btn sm" data-act="settings">Edit matrix</button></div>
+      <div class="tablewrap" style="border:0;background:none"><table><thead><tr><th>Deviation</th><th>Routes to</th><th>Approvals created</th><th>Approver</th><th class="r">SLA by lane</th></tr></thead><tbody>${trigRows}${alwaysRows}</tbody></table></div>
+      <div class="insight"><b>Lane rules:</b> Fast when there are no levers, or pricing only with a discount at or under ${S().lanes.fastDisc}% and standard Net ${S().lanes.stdPay}. Exception when the discount is over ${S().lanes.excDisc}%, payment terms run past ${S().lanes.excPay} days, contract terms are non-standard, or four or more levers are pulled. Everything else is Complex.</div>
     </div>
   </div>`;
 }
 
+/* ---------- IMPACT ---------- */
 function periodData(p,offset=0){
-  const end=now()-offset*p*DAY,start=p?end-p*DAY:0;
-  const inP=t=>t&&t>=start&&t<end;
-  const bk=state.deals.filter(d=>inP(d.bookedAt));const cyc=bk.map(d=>days(cycleMs(d)));
-  return{bk,med:median(cyc),p90:pctl(cyc,.9),fp:bk.length?bk.filter(d=>!d.kickback).length/bk.length*100:null,val:bk.reduce((a,d)=>a+d.value,0),
-    appr:state.deals.reduce((a,d)=>a+d.approvals.filter(x=>inP(x.doneAt)).length,0),
+  const end=now()-offset*p*DAY,start=p?end-p*DAY:0,inP=t=>t&&t>=start&&t<end;
+  const bk=state.deals.filter(d=>inP(d.bookedAt));const cyc=bk.map(cycleDays).filter(x=>x!=null);
+  const acked=state.deals.filter(d=>inP(d.createdAt)&&d.ackAt);
+  return{bk,med:median(cyc),p90:pctl(cyc,.9),fp:bk.length?bk.filter(d=>!d.kickback).length/bk.length*100:null,val:bk.reduce((a,d)=>a+(d.value||0),0),
+    appr:state.deals.reduce((a,d)=>a+d.approvals.filter(x=>cleared(x)&&inP(x.at)).length,0),
     ov:state.deals.reduce((a,d)=>a+d.overrides.filter(o=>inP(o.at)).length,0),
-    exc:new Set(bk.flatMap(d=>d.exceptions)).size};
+    exc:new Set(bk.flatMap(d=>d.exceptions)).size,fe:flowEff(bk),saved:bk.reduce((a,d)=>a+parSaved(d),0),
+    esc:state.deals.reduce((a,d)=>a+d.escal.filter(e=>inP(e.at)).length,0),
+    tri:acked.length?acked.filter(d=>(d.ackAt-d.createdAt)/HR<=S().triageHrs).length/acked.length*100:null,
+    lanes:Object.fromEntries(Object.keys(LANES).map(l=>[l,median(bk.filter(d=>d.lane===l).map(cycleDays).filter(x=>x!=null))]))};
+}
+function impactText(p){
+  const cur=periodData(p),prev=p?periodData(p,1):null,lab=p?`last ${p} days`:'all time',Q=qeDelta(),std=state.library.filter(x=>x.standard),cands=excGroups().filter(g=>g.deals.length>=3&&!(libFor(g.tag)||{}).standard);
+  return [
+    `DEAL DESK IMPACT · ${lab.toUpperCase()}`,'',
+    `• Booked ${cur.bk.length} deal${cur.bk.length===1?'':'s'} worth ${money(cur.val)}.`,
+    cur.med!=null?`• Median request-to-booking cycle: ${cur.med.toFixed(1)} days${prev&&prev.med!=null?` (${cur.med<prev.med?'down':'up'} ${Math.abs((cur.med-prev.med)/prev.med*100).toFixed(0)}% vs the prior ${p} days)`:''}. Slowest 10%: ${cur.p90.toFixed(1)}+ days.`:null,
+    Object.values(cur.lanes).some(x=>x!=null)?`• By lane: ${Object.entries(cur.lanes).filter(x=>x[1]!=null).map(([l,v])=>`${LANES[l].l} ${v.toFixed(1)}d`).join(' · ')}.`:null,
+    cur.fp!=null?`• First-pass booking rate: ${Math.round(cur.fp)}% of deals booked by Order Management with no kickback.`:null,
+    cur.fe!=null?`• Flow efficiency: ${Math.round(cur.fe)}% of lead time held by the desk (typical teams run about 15%).`:null,
+    cur.saved>0?`• Parallel ACS / Legal / Credit review saved ${cur.saved.toFixed(1)} days versus running reviews in sequence.`:null,
+    cur.tri!=null?`• Acknowledged ${Math.round(cur.tri)}% of new requests within the ${S().triageHrs}-hour triage SLA.`:null,
+    `• Cleared ${cur.appr} required approval${cur.appr===1?'':'s'} across PS Sales Ops, ACS, Legal, Credit, Revenue Assurance, Contract Ops and Order Mgmt.`,
+    `• Approvals bypassed: ${cur.ov}${cur.ov?' (each logged with a documented reason)':''}.`,
+    cur.esc?`• Ran ${cur.esc} structured escalation${cur.esc===1?'':'s'} at the 50% / 80% SLA points.`:null,
+    Q.r!=null?`• Quarter-end cycle time ran ${Q.r.toFixed(1)}× the mid-quarter median (target under 1.5×).`:null,
+    std.length?`• Standardized ${std.length} recurring exception${std.length>1?'s':''} into pre-approved options: ${std.map(x=>x.name).join(', ')}.`:null,
+    cands.length?`• Flagged ${cands.length} more for standardization: ${cands.map(g=>g.tag).join(', ')}.`:null
+  ].filter(x=>x!==null).join('\n');
 }
 function viewImpact(){
   const p=ui.period,cur=periodData(p),prev=p?periodData(p,1):null;
   const dlt=(a,b,lowerBetter)=>{if(a==null||b==null||!b)return'';const ch=(a-b)/b*100;const good=lowerBetter?ch<0:ch>0;return `<span class="delta ${good?'good':'bad'}">${ch>0?'▲':'▼'}${Math.abs(ch).toFixed(0)}%</span>`};
-  const t0=now(),wk=[...Array(12)].map((_,i)=>{const e=t0-(11-i)*7*DAY,s=e-7*DAY;const b=state.deals.filter(d=>d.bookedAt&&d.bookedAt>=s&&d.bookedAt<e);return{s,n:b.length,v:b.reduce((a,d)=>a+d.value,0)}});
+  const t0=now(),wk=[...Array(12)].map((_,i)=>{const e=t0-(11-i)*7*DAY,s=e-7*DAY;const b=state.deals.filter(d=>d.bookedAt&&d.bookedAt>=s&&d.bookedAt<e);return{s,n:b.length,v:b.reduce((a,d)=>a+(d.value||0),0)}});
   const wm=Math.max(1,...wk.map(w=>w.n));
-  const cands=excGroups().filter(g=>g.deals.length>=3);
-  const lab=p?`last ${p} days`:'all time';
-  const lines=[
-    `DEAL DESK IMPACT · ${lab.toUpperCase()}`,
-    ``,
-    `• Booked ${cur.bk.length} deal${cur.bk.length===1?'':'s'} worth ${money(cur.val)}.`,
-    cur.med!=null?`• Median request-to-booking cycle: ${cur.med.toFixed(1)} days${prev&&prev.med!=null?` (${cur.med<prev.med?'down':'up'} ${Math.abs((cur.med-prev.med)/prev.med*100).toFixed(0)}% vs prior ${p} days)`:''}. Slowest 10%: ${cur.p90.toFixed(1)}+ days.`:null,
-    cur.fp!=null?`• First-pass booking rate: ${Math.round(cur.fp)}% of deals booked by Order Management with no kickback.`:null,
-    `• Cleared ${cur.appr} required approval${cur.appr===1?'':'s'} across PS Sales Ops, ACS, Legal, Credit, Revenue Assurance, Contract Ops and Order Mgmt.`,
-    `• Approvals bypassed: ${cur.ov}${cur.ov?' (each logged with a documented reason)':''}.`,
-    cur.exc?`• Handled ${cur.exc} distinct non-standard exception type${cur.exc===1?'':'s'} on booked deals.`:null,
-    cands.length?`• Flagged ${cands.length} recurring exception${cands.length>1?'s':''} for standardization: ${cands.map(g=>g.tag).join(', ')}.`:null
-  ].filter(x=>x!==null).join('\n');
   return `<div class="grid">
     <div class="panel span2" style="--i:0"><div class="ph"><h3>Your impact</h3><div class="segs">${[[30,'30 days'],[90,'90 days'],[180,'6 months'],[0,'All time']].map(([v,l])=>`<button data-act="period" data-id="${v}" aria-pressed="${ui.period===v}">${l}</button>`).join('')}</div></div>
       <div class="tiles">
-        <div class="tile"><b><span data-n="${cur.bk.length}" data-f="int">0</span></b><span>Deals booked ${prev?dlt(cur.bk.length,prev.bk.length,false):''}</span></div>
-        <div class="tile"><b><span data-n="${cur.val}" data-f="money">0</span></b><span>Value booked ${prev?dlt(cur.val,prev.val,false):''}</span></div>
-        <div class="tile"><b>${cur.med==null?'—':`<span data-n="${cur.med}" data-f="d1" data-s="d">0</span>`}</b><span>Median cycle ${prev?dlt(cur.med,prev.med,true):''}</span></div>
-        <div class="tile"><b>${cur.fp==null?'—':`<span data-n="${cur.fp}" data-f="pct">0</span>`}</b><span>First-pass booking</span></div>
+        <div class="tile"><b>${V(cur.bk.length,'int')}</b><span>Deals booked ${prev?dlt(cur.bk.length,prev.bk.length,false):''}</span></div>
+        <div class="tile"><b>${V(cur.val,'money')}</b><span>Value booked ${prev?dlt(cur.val,prev.val,false):''}</span></div>
+        <div class="tile"><b>${V(cur.med,'d1','d')}</b><span>Median cycle ${prev?dlt(cur.med,prev.med,true):''}</span></div>
+        <div class="tile"><b>${V(cur.fp,'pct')}</b><span>First-pass booking</span></div>
+        <div class="tile"><b>${V(cur.fe,'pct')}</b><span>Flow efficiency</span></div>
+        <div class="tile"><b>${V(cur.saved,'d1','d')}</b><span>Saved by parallel review</span></div>
+        <div class="tile"><b>${V(cur.tri,'pct')}</b><span>Triaged within ${S().triageHrs}h</span></div>
+        <div class="tile"><b>${V(state.library.filter(x=>x.standard).length,'int')}</b><span>Exceptions standardized</span></div>
       </div>
       <h4 class="eyebrow" style="margin:6px 0 0">Deals booked per week · last 12 weeks</h4>
-      <div class="weeks">${wk.map((w,i)=>`<div class="wk" title="${w.n} booked · ${money(w.v)}"><span>${w.n||''}</span><i class="${w.n?'':'zero'}" style="--i:${i};height:${w.n/wm*100}%"></i></div>`).join('')}</div>
-      <div class="wlabels">${wk.map((w,i)=>`<span>${i%2?'':dshort(w.s)}</span>`).join('')}</div>
+      <div class="weeks" style="grid-template-columns:repeat(12,minmax(0,1fr))">${wk.map((w,i)=>`<div class="wk" title="${w.n} booked · ${money(w.v)}"><span>${w.n||''}</span><i class="${w.n?'':'zero'}" style="--i:${i};height:${w.n/wm*100}%"></i></div>`).join('')}</div>
+      <div class="wlabels" style="grid-template-columns:repeat(12,minmax(0,1fr))">${wk.map((w,i)=>`<span>${i%2?'':dshort(w.s)}</span>`).join('')}</div>
     </div>
     <div class="panel span2" style="--i:1"><div class="ph"><h3>Review-ready summary</h3><button class="btn sm primary" data-act="copyImpact">Copy summary</button></div>
-      <pre class="report" id="report">${esc(lines)}</pre>
-      <p class="note" style="margin-top:10px">Paste this into a 1:1, a self-review, or a promotion case. The numbers come straight from your ledger.</p>
+      <pre class="report" id="report">${esc(impactText(p))}</pre>
+      <p class="note" style="margin-top:10px">Paste this into a 1:1, a self-review, or a promotion case. Every number comes from the ledger.</p>
     </div>
   </div>`;
 }
 
+/* ---------- Render ---------- */
 function renderView(animate){
   const v=document.getElementById('view');
-  const fn={board:viewBoard,ledger:viewLedger,radar:viewRadar,exceptions:viewExceptions,impact:viewImpact}[ui.tab];
+  const fn={today:viewToday,board:viewBoard,ledger:viewLedger,radar:viewRadar,playbook:viewPlaybook,impact:viewImpact}[ui.tab];
   v.innerHTML=fn();
   if(animate&&!reduce){v.classList.remove('enter');void v.offsetWidth;v.classList.add('enter');clearTimeout(v._t);v._t=setTimeout(()=>v.classList.remove('enter'),1400)}
   countUp(v,animate);
@@ -628,182 +968,400 @@ function renderView(animate){
 function renderBanner(){
   const b=document.getElementById('banner');
   const hasSample=state.deals.some(d=>d.sample);
-  b.innerHTML=hasSample?`<div class="banner"><span><b>These are sample deals</b> so you can see how it works. Add your first real deal, then clear the samples.</span><button class="btn sm" data-act="clearSample">Clear sample deals</button></div>`:(!canStore?`<div class="banner"><span><b>This browser is blocking storage.</b> Your deals won't be kept after you close the page. Use Data &amp; SLAs → Copy backup.</span></div>`:'');
+  b.innerHTML=hasSample?`<div class="banner"><span><b>These are sample deals</b> so you can see how it works. Add your first real deal, then clear the samples.</span><button class="btn sm" data-act="clearSample">Clear sample deals</button></div>`:(!canStore?`<div class="banner"><span><b>This browser is blocking storage.</b> Deals won't be kept after the page closes. Use Matrix &amp; data → Copy backup.</span></div>`:'');
 }
-function renderAll(animate){renderBanner();renderKPIs(animate);renderTabs();renderView(animate);renderDrawer()}
+function renderLists(){
+  document.getElementById('excs').innerHTML=[...new Set([...COMMON_EXC,...state.library.map(x=>x.name)])].map(x=>`<option value="${esc(x)}">`).join('');
+  document.getElementById('reps').innerHTML=[...new Set(state.deals.map(d=>d.rep).filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('');
+}
+function renderAll(animate){MED=null;renderBanner();renderKPIs(animate);renderTabs();renderView(animate);renderLists();renderDrawer()}
 
 /* ---------- Drawer ---------- */
-function openDrawer(mode,id){ui.mode=mode;ui.id=id||null;ui.guard=false;ui.confirmDel=false;ui.confirmClear=false;renderDrawer();document.getElementById('drawer').classList.add('on');document.getElementById('drawer').setAttribute('aria-hidden','false');document.getElementById('scrim').classList.add('on');setTimeout(()=>{const f=document.querySelector('#drawer [autofocus]')||document.querySelector('#drawer .x');f&&f.focus()},60)}
-function closeDrawer(){ui.mode=null;document.getElementById('drawer').classList.remove('on');document.getElementById('drawer').setAttribute('aria-hidden','true');document.getElementById('scrim').classList.remove('on')}
+function openDrawer(mode,id){Object.assign(ui,{mode,id:id||null,guard:null,confirmDel:false,confirmClear:false,laneEdit:null,apOpen:null,escOpen:false,importRows:null});renderDrawer();const dr=document.getElementById('drawer');dr.classList.add('on');dr.setAttribute('aria-hidden','false');document.getElementById('scrim').classList.add('on');dr.querySelector('.dbody')&&(dr.querySelector('.dbody').scrollTop=0);setTimeout(()=>{const f=dr.querySelector('[autofocus]')||dr.querySelector('.x');f&&f.focus()},60)}
+function closeDrawer(){ui.mode=null;const dr=document.getElementById('drawer');dr.classList.remove('on');dr.setAttribute('aria-hidden','true');document.getElementById('scrim').classList.remove('on')}
 function renderDrawer(){
-  const el=document.getElementById('drawer');
-  if(!ui.mode){return}
+  const el=document.getElementById('drawer');if(!ui.mode)return;
+  const body=el.querySelector('.dbody'),top=body?body.scrollTop:0;
   if(ui.mode==='deal'){const d=byId(ui.id);if(!d){closeDrawer();return}el.innerHTML=dealHTML(d)}
   else if(ui.mode==='new')el.innerHTML=newHTML();
+  else if(ui.mode==='lib')el.innerHTML=libHTML();
+  else if(ui.mode==='import')el.innerHTML=importHTML();
   else el.innerHTML=settingsHTML();
+  const nb=el.querySelector('.dbody');if(nb&&ui._keepScroll)nb.scrollTop=top;ui._keepScroll=false;
+  if(ui.mode==='new')updatePreview();
 }
-function head(eyebrow,title){return `<div class="dhead"><div style="min-width:0"><div class="eyebrow">${eyebrow}</div><h2>${title}</h2></div><button class="x" data-act="close" aria-label="Close">×</button></div>`}
+function head(eyebrow,title,extra){return `<div class="dhead"><div style="min-width:0"><div class="eyebrow">${eyebrow}</div><h2>${title}</h2>${extra||''}</div><button class="x" data-act="close" aria-label="Close">×</button></div>`}
+const chaser=st=>{const m=S().matrix[st]||{};return `<div class="chase">Chase <b>${esc(m.approver||'—')}</b>${m.backup?` · backup <b>${esc(m.backup)}</b>`:''}${m.email?` · <span class="mono" style="user-select:all">${esc(m.email)}</span>`:''}</div>`};
 
+function trackHTML(d,s){
+  const r=segRatio(d,s),lv=pendingEsc(d,s),sl=slaFor(d,s.stage),el=days(segActive(d,s)),paused=days((s.end||now())-s.start)-el;
+  const oa=openAppr(d,s.stage),isIntake=s.stage==='intake';
+  const gate=isIntake&&!d.intake.every(Boolean);
+  let g='';
+  if(ui.guard===s.stage){
+    const n={bypass:oa.length>0,miss:r>1,closeout:s.stage==='om'&&!d.closeout.every(Boolean)};
+    g=`<div class="guard">${n.bypass?`<div><b>${oa.length} approval${oa.length>1?'s are':' is'} still open in ${SMAP[s.stage].dept}:</b><ul>${oa.map(a=>`<li>${esc(a.label)}${a.status==='no'?' (declined)':''}</li>`).join('')}</ul><input class="input" id="g-bypass" placeholder="Why you're moving on anyway (gets logged)" style="margin-top:6px"></div>`:''}
+      ${n.closeout?`<div><b>Close-out isn't finished.</b> ${d.closeout.filter(x=>!x).length} checks are open.<input class="input" id="g-closeout" placeholder="Why you're booking anyway (gets logged)" style="margin-top:6px"></div>`:''}
+      ${n.miss?`<div><b>This stage ran ${f1(el-sl)}d past its SLA.</b> Pick the main reason.<select class="select" id="g-miss" style="margin-top:6px"><option value="">Choose a reason</option>${MISS.map(m=>`<option>${m}</option>`).join('')}</select></div>`:''}
+      <div class="inline"><button class="btn danger" data-act="guardGo" data-id="${s.stage}">Log &amp; complete ${SMAP[s.stage].short}</button><button class="btn" data-act="guardCancel">Cancel</button></div></div>`;
+  }
+  const nx=(()=>{const st=steps(d),i=st.findIndex(x=>x.includes(s.stage)),rest=openSegs(d).length;if(rest>1)return`Complete ${SMAP[s.stage].short}`;const n=st[i+1];return !n||n[0]==='booked'?'Mark booked ✓':`Complete → ${n.map(z=>SMAP[z].short).join(' + ')}`})();
+  return `<div class="trk ${tone(r)==='ok'?'':tone(r)}">
+    <div class="row" style="flex-wrap:wrap"><span><b>${SMAP[s.stage].name}</b> · ${SMAP[s.stage].dept}<br><span class="meta">${f1(el)} of ${f1(sl)} SLA days (${LANES[d.lane].l} lane)${paused>.05?` · ${f1(paused)}d paused on rep`:''}</span></span><span class="chips"><span class="chip ${tone(r)}">${Math.round(r*100)}% of SLA</span>${lv?`<span class="chip ${lv>=80?'crit':'warn'}">${lv===100?'Breached':lv===80?'Escalate now':'Check in'}</span>`:''}</span></div>
+    <div class="slabar"><i class="${tone(r)}" style="width:${Math.min(100,r*100)}%"></i><u style="left:50%"></u><u style="left:80%"></u></div>
+    ${isIntake?'':chaser(s.stage)}
+    ${gate?`<div class="guard info"><b>Intake gate: ${d.intake.filter(Boolean).length} of ${INTAKE.length} items in.</b><span>The clock ${d.clockStart?'is running':'starts'} when intake is complete. Quarter-end doesn't relax this.</span><div class="inline"><button class="btn sm" data-act="sendBack">Send back to rep</button>${d.ackAt?'':'<button class="btn sm" data-act="ack">Acknowledge</button>'}</div></div>`:(isIntake&&!d.ackAt?`<div class="inline"><button class="btn sm" data-act="ack">Acknowledge &amp; triage</button><span class="note">Triage SLA ${S().triageHrs}h</span></div>`:'')}
+    ${g}
+    <div class="inline">${gate?`<button class="btn" disabled style="flex:1;justify-content:center">Finish intake to advance</button>`:`<button class="btn primary" data-act="complete" data-id="${s.stage}" style="flex:1;justify-content:center">${nx}</button>`}
+      ${isIntake?'':`<button class="btn sm" data-act="chase" data-id="${s.stage}">Copy chase email</button>`}
+      ${r>=.5&&!isIntake?`<button class="btn sm" data-act="escToggle">${ui.escOpen?'Hide':'Escalation'} package</button>`:''}</div>
+  </div>`;
+}
+function escPackageText(d){
+  const s=openSegs(d).sort((a,b)=>segRatio(d,b)-segRatio(d,a))[0];if(!s)return'';
+  const dev=[...d.triggers.map(t=>TRIG[t].label),...d.exceptions].filter(Boolean);
+  const e=d.escData||{};
+  return [`ESCALATION · ${d.code} · ${d.account}`,'',
+    `The ask: ${e.ask||`Decision from ${SMAP[s.stage].dept} to keep ${d.code} on track for close ${dshort(d.closeDate)}.`}`,
+    `Status: ${SMAP[s.stage].name}, ${f1(days(segActive(d,s)))} of ${f1(slaFor(d,s.stage))} SLA days (${Math.round(segRatio(d,s)*100)}%). ${LANES[d.lane].l} lane.`,
+    `Deviations: ${dev.length?dev.join('; '):'None beyond standard'}`,
+    `Economics: ${money(d.value)} · discount ${d.discount||0}% · Net ${d.payDays||30}`,
+    `Open approvals: ${openAppr(d,s.stage).map(a=>a.label).join('; ')||'None'}`,
+    `Risk: ${e.risk||(closeRisk(d)&&closeRisk(d).t!=='ok'?`About ${f1(closeRisk(d).rem)} days of work left with ${Math.max(0,closeRisk(d).left).toFixed(0)} days to close.`:'Close date at risk if this stage slips further.')}`,
+    `Options:`,...(e.options||'1. Approve as requested\n2. Approve with conditions\n3. Restructure the deal').split('\n').map(x=>'  '+x),
+    `Recommendation: ${e.rec||'(add your recommendation)'}`,
+    `Owner: ${S().myName||'Deal Desk'}`].join('\n');
+}
+function apHTML(a,d){
+  const exp=a.exp&&cleared(a)&&(a.exp<(d.closeDate||Infinity)||a.exp-now()<7*DAY);
+  const meta=[a.at&&a.status!=='open'?`${a.status==='no'?'Declined':'Decided'} ${dshort(a.at)}`:'',a.by?`by ${esc(a.by)}`:'',a.exp?`expires ${dshort(a.exp)}`:''].filter(Boolean).join(' · ');
+  const open=ui.apOpen===a.id||a.status==='yesif'&&!a.cond;
+  return `<div class="ap st-${a.status}">
+    <div class="aprow"><span class="apl">${esc(a.label)}${meta?`<small class="${exp?'warn':''}">${meta}${exp?' · expiring':''}</small>`:''}${a.status==='yesif'&&a.cond?`<small>If: ${esc(a.cond)}</small>`:''}</span>
+      <span class="inline" style="gap:6px"><span class="segs mini dec">${[['open','Open'],['yes','Yes'],['yesif','Yes if'],['no','No']].map(([v,l])=>`<button data-act="apSet" data-id="${a.id}:${v}" aria-pressed="${a.status===v}">${l}</button>`).join('')}</span><button class="link" data-act="apOpen" data-id="${a.id}">${open?'Hide':'Details'}</button></span></div>
+    ${open?`<div class="apf"><label class="f">Approver<input class="input sm" data-ap="${a.id}" data-k="by" value="${esc(a.by)}" placeholder="${esc(S().matrix[a.dept]?.approver||'')}"></label><label class="f">Condition (yes if…)<input class="input sm" data-ap="${a.id}" data-k="cond" value="${esc(a.cond)}" placeholder="e.g. auto-pay on file"></label><label class="f">Approval expires<input class="input sm" type="date" data-ap="${a.id}" data-k="exp" value="${iso(a.exp)}"></label></div>`:''}
+    ${a.status==='no'?'<small class="note">Declined. Counter-structure (trade discount for term or upfront payment) or escalate.</small>':''}
+  </div>`;
+}
 function dealHTML(d){
-  const route=reqStages(d),ci=route.indexOf(d.stage),nx=nextStage(d),w=waiting(d);
-  const openHere=d.approvals.filter(a=>a.dept===d.stage&&!a.done);
-  const steps=route.map((s,i)=>`<li class="${i<ci||d.bookedAt?'done':i===ci?'cur':''}"><i></i><span>${SMAP[s].short}</span></li>`).join('');
-  const sd=stageDur(d);
-  const depts=route.filter(s=>d.approvals.some(a=>a.dept===s));
-  const appr=depts.map(s=>{const L=d.approvals.filter(a=>a.dept===s);return `<div class="dept${s===d.stage?' cur':''}"><div class="dh"><span>${SMAP[s].dept}${s===d.stage?' · current':''}</span><span class="mono">${L.filter(a=>a.done).length}/${L.length}</span></div>${L.map(a=>`<button class="chk${a.done?' on':''}" data-act="appr" data-id="${a.id}"><span class="box"></span><span class="lt">${esc(a.label)}${a.done&&a.doneAt?`<small>Cleared ${dshort(a.doneAt)}</small>`:''}</span></button>`).join('')}</div>`}).join('');
-  const guard=ui.guard?`<div class="guard"><b>${openHere.length} approval${openHere.length>1?'s are':' is'} still open in ${SMAP[d.stage].dept}:</b><ul>${openHere.map(a=>`<li>${esc(a.label)}</li>`).join('')}</ul><span>Moving on now gets logged as a bypassed approval. Say why.</span><input class="input" id="guardReason" placeholder="Reason (e.g. VP approval by email, filed in opp)" autofocus><div class="inline"><button class="btn danger" data-act="guardGo">Log reason &amp; advance</button><button class="btn" data-act="guardCancel">Cancel</button></div></div>`:'';
-  const actions=d.bookedAt?`<div class="actbox"><div class="row"><span><b style="color:var(--ok)">Booked ${dshort(d.bookedAt)}</b> · ${days(cycleMs(d)).toFixed(1)} days from request</span><button class="btn sm" data-act="undo">Undo last move</button></div>
-      <div class="toggle"><span>Order Management kicked it back before booking</span><button class="sw" data-act="kick" aria-pressed="${d.kickback}" aria-label="Kicked back"></button></div></div>`
-    :`<div class="actbox">
-      <div class="row" style="flex-wrap:wrap"><span><b>${SMAP[d.stage].name}</b> · ${SMAP[d.stage].dept}<br><span class="meta">${days(inStage(d)).toFixed(1)} of ${sla(d.stage)} SLA days</span></span><span class="chip ${tone(ratio(d))}">${Math.round(ratio(d)*100)}% of SLA</span></div>
-      <div><div class="eyebrow" style="margin-bottom:6px">Who has the ball?</div><div class="segs">${Object.keys(WHO).map(k=>`<button data-act="wait" data-id="${k}" aria-pressed="${w===k}">${WHO[k]}</button>`).join('')}</div></div>
-      ${guard}
-      <div class="inline"><button class="btn primary" data-act="advance" style="flex:1;justify-content:center">${nx==='booked'?'Mark booked ✓':`Advance to ${SMAP[nx].short} →`}</button>${d.history.length>1?'<button class="btn" data-act="undo">Undo</button>':''}</div>
-      ${d.stage==='om'?`<div class="toggle"><span>Order Management kicked it back</span><button class="sw" data-act="kick" aria-pressed="${d.kickback}" aria-label="Kicked back"></button></div>`:''}
+  const st=steps(d),ci=curStepIdx(d),w=waiting(d),open=openSegs(d);
+  const stepper=st.map((x,i)=>`<li class="${isBooked(d)||i<ci?'done':i===ci?'cur':''}${x.length>1?' par':''}"><i></i><span>${x.map(s=>SMAP[s].short).join(' ∥ ')}</span></li>`).join('');
+  const cr=closeRisk(d);
+  const facts=`<div class="factgrid">
+    <div class="fact"><span>Value</span><input data-field="value" type="number" step="1000" value="${d.value||0}"></div>
+    <div class="fact"><span>Target close</span><input data-field="closeDate" type="date" value="${iso(d.closeDate)}"></div>
+    <div class="fact"><span>Discount %</span><input data-field="discount" type="number" step="1" min="0" value="${d.discount||0}"></div>
+    <div class="fact"><span>Payment days</span><input data-field="payDays" type="number" step="15" min="0" value="${d.payDays||30}"></div>
+    <div class="fact"><span>Cycle</span><b>${cycleDays(d)==null?'Not started':f1(cycleDays(d))+'d'}</b></div>
+    <div class="fact"><span>Approvals</span><b>${apprDone(d)}/${d.approvals.length}</b></div>
+    <div class="fact"><span>Work left</span><b>${isBooked(d)?'—':'~'+f1(remaining(d))+'d'}</b></div>
+    <div class="fact"><span>Close risk</span><b style="color:${cr?`var(--${cr.t})`:'var(--fg)'}">${!cr?'—':cr.t==='crit'?'Likely miss':cr.t==='warn'?'Tight':'On track'}</b></div>
+  </div>`;
+  const laneBox=ui.laneEdit?`<div class="guard info"><b>Move to the ${LANES[ui.laneEdit].l} lane?</b><span>Auto-assignment says ${LANES[autoLane(d)].l} (${esc(laneWhy(d))}). Log why you're changing it.</span><input class="input" id="laneReason" placeholder="Reason" autofocus><div class="inline"><button class="btn sm primary" data-act="laneGo">Change lane</button><button class="btn sm" data-act="laneCancel">Cancel</button></div></div>`:'';
+  const laneRow=`<div class="row" style="flex-wrap:wrap"><span class="inline" style="gap:8px">${laneTag(d.lane)}<span class="note">${d.laneAuto?'Auto':'Manual'} · ${esc(laneWhy(d))}</span></span><span class="segs mini">${Object.keys(LANES).map(l=>`<button data-act="laneSet" data-id="${l}" aria-pressed="${d.lane===l}">${LANES[l].l}</button>`).join('')}</span></div>`;
+  let actions;
+  if(isBooked(d)){
+    actions=`<div class="actbox"><div class="row"><span><b style="color:var(--ok)">Booked ${dshort(d.bookedAt)}</b> · ${f1(cycleDays(d))} days from complete intake</span><button class="btn sm" data-act="unbook">Reopen</button></div>
+      <div class="toggle"><span>Order Management kicked it back before booking</span><button class="sw bad" data-act="kick" aria-pressed="${d.kickback}" aria-label="Kicked back"></button></div></div>`;
+  }else{
+    actions=`<div class="actbox">
+      <div class="row" style="flex-wrap:wrap"><div><div class="eyebrow" style="margin-bottom:6px">Who has the ball?</div><div class="segs">${Object.keys(WHO).map(k=>`<button data-act="wait" data-id="${k}" aria-pressed="${w===k}">${WHO[k]}</button>`).join('')}</div></div>
+      ${PAR.filter(s=>reqStages(d).includes(s)).length>=2?`<div class="toggle" style="gap:10px"><span class="note">Parallel review</span><button class="sw" data-act="parToggle" aria-pressed="${!!d.parallel}" aria-label="Parallel review" ${open.some(s=>PAR.includes(s.stage))||d.segs.some(s=>PAR.includes(s.stage))?'disabled title="Set before review starts"':''}></button></div>`:''}</div>
+      ${open.map(s=>trackHTML(d,s)).join('')}
+      ${ui.escOpen?`<div class="trk"><b>Escalation package</b><span class="note">Ask, deviations, economics, risk, options and a recommendation. Fill the blanks, then copy.</span>
+        <label class="f">The ask<input class="input" data-esc="ask" value="${esc((d.escData||{}).ask||'')}" placeholder="What decision you need, from whom, by when"></label>
+        <label class="f">Risk<input class="input" data-esc="risk" value="${esc((d.escData||{}).risk||'')}" placeholder="What happens if this slips"></label>
+        <label class="f">Options (one per line)<textarea class="input" data-esc="options">${esc((d.escData||{}).options||'1. Approve as requested\n2. Approve with conditions\n3. Restructure the deal')}</textarea></label>
+        <label class="f">Recommendation<input class="input" data-esc="rec" value="${esc((d.escData||{}).rec||'')}" placeholder="Your call and why"></label>
+        <div class="inline"><button class="btn sm primary" data-act="escCopy">Copy package &amp; log escalation</button><button class="btn sm" data-act="escLog">Log escalation only</button></div></div>`:''}
+      ${open.some(s=>s.stage==='om')?`<div class="trk"><div class="row"><b>Close-out checklist</b><span class="mono note">${d.closeout.filter(Boolean).length}/${CLOSEOUT.length}</span></div>${CLOSEOUT.map((l,i)=>`<button class="chk${d.closeout[i]?' on':''}" data-act="closeout" data-id="${i}"><span class="box"></span><span class="lt">${l}</span></button>`).join('')}
+        <div class="toggle"><span>Order Management kicked it back</span><button class="sw bad" data-act="kick" aria-pressed="${d.kickback}" aria-label="Kicked back"></button></div></div>`:''}
     </div>`;
-  const tl=d.history.map((h,i)=>`<div><span>${dshort(h.at)}</span><span>${SMAP[h.stage].short}</span><span class="mono">${h.stage==='booked'?'✓':days(i+1<d.history.length?d.history[i+1].at-h.at:now()-h.at).toFixed(1)+'d'}</span></div>`).join('');
-  const ws=waitSplit(d),wt=ws.desk+ws.reviewer+ws.requestor||1;
+  }
+  const depts=reqStages(d).filter(s=>d.approvals.some(a=>a.dept===s));
+  const appr=depts.map(s=>{const L=d.approvals.filter(a=>a.dept===s);return `<div class="dept${curStages(d).includes(s)?' cur':''}"><div class="dh"><span>${SMAP[s].dept}${curStages(d).includes(s)?' · in review':''}</span><span class="mono">${L.filter(cleared).length}/${L.length}</span></div>${L.map(a=>apHTML(a,d)).join('')}</div>`}).join('');
+  const segsT=[...d.segs].sort((a,b)=>a.start-b.start).map(s=>`<div><span>${dshort(s.start)}</span><span>${SMAP[s.stage].short}${s.end||s.stage==='booked'?'':' · open'}</span><span class="mono">${s.stage==='booked'?'✓':f1(days(segActive(d,s)))+'d'}</span></div>`).join('');
+  const logs=[
+    ...d.laneLog.map(x=>({at:x.at,t:`Lane ${LANES[x.from]?.l||x.from} → ${LANES[x.to].l}: ${x.reason}`})),
+    ...d.overrides.map(o=>({at:o.at,t:`Bypassed ${o.count} ${o.kind==='closeout'?'close-out check':'approval'}${o.count>1?'s':''} at ${SMAP[o.stage].short}: “${o.reason}”`})),
+    ...d.misses.map(m=>({at:m.at,t:`${SMAP[m.stage].short} missed SLA by ${f1(m.over)}d: ${m.reason||'no reason'}`})),
+    ...d.escal.map(e=>({at:e.at,t:`Escalated ${SMAP[e.stage].short} at ${e.level===100?'breach':e.level+'%'}`})),
+    ...d.sendbacks.map(s=>({at:s.at,t:`Sent back to rep: ${s.missing.join(', ')}`}))
+  ].sort((a,b)=>b.at-a.at);
   return head(`${esc(d.code)} · ${esc(d.rep||'No rep')}`,esc(d.account))+`<div class="dbody">
-    <div class="facts"><span>Value <b class="num">${money(d.value)}</b></span><span>Opened <b>${dshort(d.createdAt)}</b></span><span>Cycle <b class="num">${days(cycleMs(d)).toFixed(1)}d</b></span><span>Approvals <b class="num">${apprDone(d)}/${d.approvals.length}</b></span></div>
-    <div class="stepper"><ol>${steps}</ol></div>
+    ${laneRow}${laneBox}
+    ${facts}
+    <div class="stepper"><ol>${stepper}</ol></div>
     ${actions}
-    <div class="sec"><h4><span>Time split</span><span>${Object.keys(ws).map(k=>`${WHO[k]} ${days(ws[k]).toFixed(1)}d`).join(' · ')}</span></h4><div class="stack">${['desk','reviewer','requestor'].map(k=>`<i class="${k}" style="flex:${ws[k]/wt}"></i>`).join('')}</div></div>
-    <div class="sec"><h4><span>Required approvals</span></h4>${appr}
-      <div class="inline" style="margin-top:6px"><select class="select" id="newApprDept">${STAGES.filter(s=>!['intake','booked'].includes(s.id)).map(s=>`<option value="${s.id}">${s.short}</option>`).join('')}</select><input class="input" id="newApprLabel" placeholder="Add an approval this deal needs"><button class="btn sm" data-act="addAppr">Add</button></div></div>
-    <div class="sec"><h4><span>Intake checklist</span><span>${d.intake.filter(Boolean).length}/${INTAKE.length}</span></h4>${INTAKE.map((l,i)=>`<button class="chk${d.intake[i]?' on':''}" data-act="intake" data-id="${i}"><span class="box"></span><span class="lt">${l}</span></button>`).join('')}</div>
+    <div class="sec"><h4><span>Decisions by department</span><span>Yes · Yes if · No, with conditions &amp; expiry</span></h4>${appr}
+      <div class="inline" style="margin-top:6px"><select class="select sm" id="newApprDept">${STAGES.filter(s=>!['intake','booked'].includes(s.id)).map(s=>`<option value="${s.id}">${s.short}</option>`).join('')}</select><input class="input sm" id="newApprLabel" placeholder="Add an approval this deal needs"><button class="btn sm" data-act="addAppr">Add</button></div></div>
+    <div class="sec"><h4><span>Definition of complete (intake)</span><span>${d.intake.filter(Boolean).length}/${INTAKE.length}${d.clockStart?` · clock started ${dshort(d.clockStart)}`:' · clock not started'}</span></h4>${INTAKE.map((l,i)=>`<button class="chk${d.intake[i]?' on':''}" data-act="intake" data-id="${i}"><span class="box"></span><span class="lt">${l[0]}<small>${l[1]}</small></span></button>`).join('')}
+      ${!d.intake.every(Boolean)&&!isBooked(d)?'<div class="inline" style="margin-top:6px"><button class="btn sm" data-act="sendBack">Send back to rep</button><span class="note">Copies a message listing what is missing and pauses the clock.</span></div>':''}</div>
     <div class="sec"><h4><span>Exceptions on this deal</span></h4><div class="tags" style="margin-bottom:8px">${d.exceptions.map(t=>`<span class="tag">${esc(t)}<button data-act="excRemove" data-id="${esc(t)}" aria-label="Remove">×</button></span>`).join('')||'<span class="note">None tagged</span>'}</div>
-      <div class="inline"><input class="input" id="excIn" list="excs" placeholder="e.g. Net 60 payment"><button class="btn sm" data-act="excAdd">Tag</button></div></div>
+      ${d.exceptions.map(t=>{const L=libFor(t);return L?`<div class="fb"><b>${esc(L.name)}</b>${L.standard?' · standard option':''}<br>Fallback: ${esc(L.fallback)||'—'}<br>Escalate if: ${esc(L.escalate)||'—'} <button class="link" data-act="libCopy" data-id="${L.id}">Copy pushback</button></div>`:''}).join('')}
+      <div class="inline" style="margin-top:8px"><input class="input sm" id="excIn" list="excs" placeholder="e.g. Net 60 payment"><button class="btn sm" data-act="excAdd">Tag</button></div></div>
     <div class="sec"><h4><span>Notes</span></h4><textarea class="input" id="notes" placeholder="Context, who you're chasing, next step">${esc(d.notes)}</textarea></div>
-    ${d.overrides.length?`<div class="sec"><h4><span>Bypassed approvals</span></h4>${d.overrides.map(o=>`<div class="note">${dshort(o.at)} · ${SMAP[o.stage].short} · ${o.count} open · “${esc(o.reason)}”</div>`).join('')}</div>`:''}
-    <div class="sec"><h4><span>Timeline</span></h4><div class="timeline">${tl}</div></div>
-    <div class="sec">${ui.confirmDel?`<div class="guard"><span>Delete ${esc(d.code)} and its history? This can't be undone.</span><div class="inline"><button class="btn danger solid" data-act="delGo">Delete deal</button><button class="btn" data-act="delCancel">Keep it</button></div></div>`:'<button class="btn danger sm" data-act="del">Delete deal</button>'}</div>
+    ${logs.length?`<div class="sec"><h4><span>Audit trail</span></h4><div class="timeline">${logs.map(x=>`<div><span>${dshort(x.at)}</span><span>${esc(x.t)}</span><span></span></div>`).join('')}</div></div>`:''}
+    <div class="sec"><h4><span>Stage timeline</span><span>active days, rep waits excluded</span></h4><div class="timeline">${segsT}</div></div>
+    <div class="sec">${ui.confirmDel?`<div class="guard"><span>Delete ${esc(d.code)} and its history?</span><div class="inline"><button class="btn danger solid" data-act="delGo">Delete deal</button><button class="btn" data-act="delCancel">Keep it</button></div></div>`:'<button class="btn danger sm" data-act="del">Delete deal</button>'}</div>
   </div>`;
 }
 
-function nextCode(){let m=0;state.deals.forEach(d=>{const n=parseInt(String(d.code).replace(/\D/g,''),10);if(n>m)m=n});return 'DD-'+(m+1||1001)}
+function nextCode(){let m=0;state.deals.forEach(d=>{const n=parseInt(String(d.code).replace(/\D/g,''),10);if(n>m)m=n});return 'DD-'+(m?m+1:1001)}
 function newHTML(){
+  const L=S().lanes;
   return head('New deal request','Start the clock')+`<div class="dbody"><form id="newform" autocomplete="off">
     <div class="grid2"><label class="f">Deal ID<input class="input" id="f-code" value="${nextCode()}" required></label><label class="f">Account alias<input class="input" id="f-acct" placeholder="Acct-Northwind or opp ID" required autofocus></label></div>
     <p class="hint">Use an alias or opportunity ID. Keep customer names, pricing files and contract text in Adobe's systems.</p>
     <div class="grid2"><label class="f">Sales / PSS rep<input class="input" id="f-rep" list="reps" placeholder="Rep name"></label><label class="f">Deal value (USD)<input class="input" id="f-val" type="number" min="0" step="1000" placeholder="250000"></label></div>
+    <div class="grid4"><label class="f">Target close<input class="input" id="f-close" type="date"></label><label class="f">Discount %<input class="input" id="f-disc" type="number" min="0" max="100" step="1" value="0"></label><label class="f">Payment days<input class="input" id="f-pay" type="number" min="0" step="15" value="${L.stdPay}"></label><label class="f">Parallel review<select class="select" id="f-par"><option value="1"${S().parallel?' selected':''}>On</option><option value="0"${S().parallel?'':' selected'}>Off</option></select></label></div>
     <fieldset><legend>What's non-standard?</legend>${Object.entries(TRIG).map(([k,t])=>`<label class="cb"><input type="checkbox" name="trig" value="${k}" id="t-${k}">${t.label}</label>`).join('')}</fieldset>
     <div id="preview"></div>
-    <fieldset><legend>Intake checklist</legend>${INTAKE.map((l,i)=>`<label class="cb"><input type="checkbox" name="intake" value="${i}" id="i-${i}">${l}</label>`).join('')}</fieldset>
+    <fieldset><legend>Definition of complete</legend>${INTAKE.map((l,i)=>`<label class="cb"><input type="checkbox" name="intake" value="${i}" id="i-${i}"><span>${l[0]}<small>${l[1]}</small></span></label>`).join('')}</fieldset>
     <label class="f">Notes<textarea class="input" id="f-notes" placeholder="Anything the reviewers should know"></textarea></label>
-    <button class="btn primary big" type="submit">Create deal &amp; start the clock</button>
+    <button class="btn primary big" type="submit">Create deal</button>
   </form></div>`;
 }
-function previewHTML(){
+function draftFromForm(){
+  const v=id=>(document.getElementById(id)||{}).value;
   const trs=[...document.querySelectorAll('#newform [name=trig]:checked')].map(x=>x.value);
-  const ic=document.querySelectorAll('#newform [name=intake]:checked').length;
-  const ap=buildApprovals(trs);const fake={approvals:ap};const route=reqStages(fake);
-  return `<div class="preview"><div class="eyebrow">Route this deal will take</div>
-    <div class="route">${route.map((s,i)=>`${i?'<em>→</em>':''}<span class="${['psops','acs','legal','credit'].includes(s)?'req':''}">${SMAP[s].short}</span>`).join('')}</div>
-    <div class="eyebrow">${ap.length} approvals to collect</div>
-    <ul>${route.filter(s=>ap.some(a=>a.dept===s)).map(s=>`<li><b>${SMAP[s].dept}:</b> ${ap.filter(a=>a.dept===s).map(a=>esc(a.label)).join('; ')}</li>`).join('')}</ul>
-    ${ic<INTAKE.length?`<div style="color:var(--warn);font-size:12px">Intake ${ic}/${INTAKE.length}. The deal starts as waiting on the requestor until the gaps are filled.</div>`:'<div style="color:var(--ok);font-size:12px">Intake complete. Clean start.</div>'}
+  const d={triggers:trs,discount:+v('f-disc')||0,payDays:+v('f-pay')||0,parallel:v('f-par')==='1',closeDate:fromIso(v('f-close')),approvals:buildApprovals(trs),segs:[],waitLog:[],lane:'complex'};
+  d.lane=autoLane(d);return d;
+}
+function updatePreview(){
+  const p=document.getElementById('preview');if(!p)return;
+  const d=draftFromForm(),ic=document.querySelectorAll('#newform [name=intake]:checked').length,st=steps(d),m=meds(),M=S().matrix;
+  let est=0;st.forEach(x=>{if(x[0]!=='booked')est+=Math.max(...x.map(s=>m[s]))});
+  est*=S().lanes.mult[d.lane]/1;
+  const left=d.closeDate?days(d.closeDate-now()):null;
+  p.innerHTML=`<div class="preview">
+    <div class="row"><span class="eyebrow">Lane</span><span class="inline" style="gap:8px">${laneTag(d.lane)}<span class="note">${esc(laneWhy(d))}</span></span></div>
+    <div class="eyebrow">Route</div>
+    <div class="route">${st.map((x,i)=>`${i?'<em>→</em>':''}${x.length>1?`<span class="par">${x.map(s=>SMAP[s].short).join(' ∥ ')}</span>`:`<span class="${['psops','acs','legal','credit'].includes(x[0])?'req':''}">${SMAP[x[0]].short}</span>`}`).join('')}</div>
+    <div class="eyebrow">${d.approvals.length} approvals to collect</div>
+    <ul>${reqStages(d).filter(s=>d.approvals.some(a=>a.dept===s)).map(s=>`<li><b>${SMAP[s].dept}</b> (${esc(M[s].approver||'—')}, ${f1(slaFor(d,s))}d): ${d.approvals.filter(a=>a.dept===s).map(a=>esc(a.label)).join('; ')}</li>`).join('')}</ul>
+    <div class="note">Typical time for this route: about ${f1(est)} working days.${left!=null?` Close date is ${Math.round(left)} days out${left<est?', <b style="color:var(--crit)">which is tighter than usual</b>':''}.`:''}</div>
+    ${ic<INTAKE.length?`<div style="color:var(--warn);font-size:12px">Intake ${ic}/${INTAKE.length}. The clock won't start and the deal can't leave intake until all ${INTAKE.length} are in.</div>`:'<div style="color:var(--ok);font-size:12px">Intake complete. The clock starts on create.</div>'}
   </div>`;
+}
+
+function libHTML(){
+  const L=ui.libId&&state.library.find(x=>x.id===ui.libId)||{name:ui.libName||'',dept:'credit',preferred:'',fallback:'',pushback:'',escalate:'',standard:false};
+  return head('Terms & fallback library',L.id?'Edit play':'New play')+`<div class="dbody"><form id="libform" autocomplete="off">
+    <div class="grid2"><label class="f">Exception name<input class="input" id="lb-name" value="${esc(L.name)}" required autofocus placeholder="e.g. Net 60 payment"></label><label class="f">Owning department<select class="select" id="lb-dept">${WORK.filter(s=>s!=='intake').map(s=>`<option value="${s}"${L.dept===s?' selected':''}>${SMAP[s].dept}</option>`).join('')}</select></label></div>
+    <label class="f">Preferred position<textarea class="input" id="lb-pref">${esc(L.preferred)}</textarea></label>
+    <label class="f">Approved fallback<textarea class="input" id="lb-fb">${esc(L.fallback)}</textarea></label>
+    <label class="f">Pushback language<textarea class="input" id="lb-push">${esc(L.pushback)}</textarea></label>
+    <label class="f">Escalate when<input class="input" id="lb-esc" value="${esc(L.escalate)}"></label>
+    <label class="cb"><input type="checkbox" id="lb-std"${L.standard?' checked':''}><span>Standardized<small>This is now a pre-approved option sales can offer without a manual review</small></span></label>
+    <div class="inline"><button class="btn primary" type="submit">Save play</button>${L.id?`<button class="btn danger" type="button" data-act="libDel" data-id="${L.id}">Delete</button>`:''}</div>
+  </form></div>`;
 }
 
 function settingsHTML(){
-  return head('Data & SLAs','Desk settings')+`<div class="dbody">
-    <div class="sec"><h4><span>Stage SLAs (days)</span></h4><p class="note" style="margin:0 0 10px">Set the turnaround you expect at each stage. Aging alerts and colors use these.</p>
-      <div class="grid2">${STAGES.filter(s=>s.id!=='booked').map(s=>`<label class="f">${s.short}<input class="input" type="number" min="0.5" step="0.5" id="sla-${s.id}" data-sla="${s.id}" value="${sla(s.id)}"></label>`).join('')}</div></div>
-    <div class="sec"><h4><span>Where your data lives</span></h4><p class="note" style="margin:0 0 10px">${canStore?'Deals are saved only in this browser on this device. Nothing is sent anywhere.':'This browser is blocking storage, so deals disappear when the page closes.'} Copy a backup regularly and keep it somewhere approved.</p>
-      <div class="inline"><button class="btn" data-act="backup">Copy backup</button><button class="btn" data-act="loadSample">Load sample deals</button></div></div>
+  const M=S().matrix,L=S().lanes;
+  return head('Matrix & data','Desk settings')+`<div class="dbody">
+    <div class="sec"><h4><span>Approval matrix</span><span>base SLA in days</span></h4>
+      <div class="tablewrap" style="border:0;background:none"><table class="mtx"><thead><tr><th>Stage</th><th>Approver</th><th>Backup</th><th>Email</th><th>SLA</th></tr></thead><tbody>
+      ${WORK.map(s=>`<tr><td>${SMAP[s].short}</td><td><input class="input" data-mx="${s}" data-k="approver" value="${esc(M[s].approver)}"></td><td><input class="input" data-mx="${s}" data-k="backup" value="${esc(M[s].backup)}"></td><td><input class="input" data-mx="${s}" data-k="email" value="${esc(M[s].email)}" placeholder="name@company.com"></td><td><input class="input" type="number" min="0.25" step="0.25" data-mx="${s}" data-k="sla" value="${M[s].sla}"></td></tr>`).join('')}
+      </tbody></table></div></div>
+    <div class="sec"><h4><span>Lane rules</span></h4>
+      <div class="grid4"><label class="f">Fast: max discount %<input class="input" type="number" data-ln="fastDisc" value="${L.fastDisc}"></label><label class="f">Standard payment days<input class="input" type="number" data-ln="stdPay" value="${L.stdPay}"></label><label class="f">Exception: discount over %<input class="input" type="number" data-ln="excDisc" value="${L.excDisc}"></label><label class="f">Exception: payment over days<input class="input" type="number" data-ln="excPay" value="${L.excPay}"></label></div>
+      <div class="grid4" style="margin-top:10px"><label class="f">Fast SLA ×<input class="input" type="number" step="0.1" data-lm="fast" value="${L.mult.fast}"></label><label class="f">Complex SLA ×<input class="input" type="number" step="0.1" data-lm="complex" value="${L.mult.complex}"></label><label class="f">Exception SLA ×<input class="input" type="number" step="0.1" data-lm="exception" value="${L.mult.exception}"></label><label class="f">Triage SLA (hours)<input class="input" type="number" min="1" data-st="triageHrs" value="${S().triageHrs}"></label></div>
+      <p class="note" style="margin-top:8px">Changing rules re-assigns lanes on deals that are still on auto.</p></div>
+    <div class="sec"><h4><span>Calendar &amp; defaults</span></h4>
+      <div class="grid2"><label class="f">Current quarter ends<input class="input" type="date" data-st="qEnd" value="${esc(S().qEnd)}"></label><label class="f">Your name (signs emails)<input class="input" data-st="myName" value="${esc(S().myName)}"></label></div>
+      <p class="note" style="margin-top:8px">Set this to Adobe's fiscal quarter end. Earlier quarters are counted back three months at a time.</p>
+      <div class="toggle" style="margin-top:10px"><span>Run ACS, Legal and Credit in parallel by default</span><button class="sw" data-act="parDefault" aria-pressed="${S().parallel}" aria-label="Parallel by default"></button></div></div>
+    <div class="sec"><h4><span>Data</span></h4><p class="note" style="margin:0 0 10px">${canStore?'Deals are saved only in this browser on this device. Nothing is sent anywhere.':'This browser is blocking storage, so deals disappear when the page closes.'} Copy a backup regularly and keep it somewhere approved.</p>
+      <div class="inline"><button class="btn sm" data-act="backup">Copy backup</button><button class="btn sm" data-act="csvCopy">Copy CSV</button>${onClaude?'':'<button class="btn sm" data-act="csvDl">Download CSV</button>'}<button class="btn sm" data-act="import">Import CSV</button><button class="btn sm" data-act="loadSample">Load sample deals</button></div></div>
     <div class="sec"><h4><span>Restore from a backup</span></h4><textarea class="input" id="restoreTxt" placeholder="Paste backup text here"></textarea>
-      <div class="inline" style="margin-top:8px"><button class="btn" data-act="restore">Restore</button><label class="btn" style="cursor:pointer">Choose file<input type="file" id="restoreFile" accept=".json,.txt,application/json" hidden></label></div></div>
-    <div class="sec"><h4><span>Start fresh</span></h4>${ui.confirmClear?`<div class="guard"><span>Remove every deal, sample and real? Copy a backup first if you need one.</span><div class="inline"><button class="btn danger solid" data-act="clearGo">Remove all deals</button><button class="btn" data-act="clearCancel">Cancel</button></div></div>`:'<button class="btn danger" data-act="clear">Remove all deals</button>'}</div>
+      <div class="inline" style="margin-top:8px"><button class="btn sm" data-act="restore">Restore</button><label class="btn sm" style="cursor:pointer">Choose file<input type="file" id="restoreFile" accept=".json,.txt,application/json" hidden></label></div></div>
+    <div class="sec"><h4><span>Start fresh</span></h4>${ui.confirmClear?`<div class="guard"><span>Remove every deal, sample and real? Copy a backup first if you need one.</span><div class="inline"><button class="btn danger solid" data-act="clearGo">Remove all deals</button><button class="btn" data-act="clearCancel">Cancel</button></div></div>`:'<button class="btn danger sm" data-act="clear">Remove all deals</button>'}</div>
   </div>`;
 }
 
-/* ---------- Actions ---------- */
-function commit(msg,anim){save();renderAll(!!anim);if(msg)toast(msg)}
-function setWait(d,who,t){if(waiting(d)!==who)d.waitLog.push({who,at:t||now()})}
-function doAdvance(d,reason){
-  const nx=nextStage(d);if(!nx)return;const t=now();
-  const open=d.approvals.filter(a=>a.dept===d.stage&&!a.done);
-  if(open.length){d.overrides.push({stage:d.stage,count:open.length,reason,at:t})}
-  d.history.push({stage:nx,at:t});d.stage=nx;ui.guard=false;
-  if(nx==='booked'){d.bookedAt=t;commit(`${d.code} booked in ${days(cycleMs(d)).toFixed(1)} days`)}
-  else{setWait(d,'reviewer',t);commit(`${d.code} moved to ${SMAP[nx].short}`)}
+/* ---------- CSV ---------- */
+function parseCSV(t){const rows=[];let row=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else if(c==='"')q=true;else if(c===','){row.push(f);f=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f=''}else f+=c}if(f!==''||row.length){row.push(f);rows.push(row)}return rows.filter(r=>r.some(x=>x.trim()!==''))}
+const COLMAP={code:['id','deal id','deal','code','dd'],account:['account','account name','opportunity','opp','opportunity name','customer'],rep:['rep','owner','opportunity owner','sales rep','ae'],value:['value','amount','acv','tcv','deal value'],closeDate:['close','close date','target close','closedate'],discount:['discount','discount %','disc'],payDays:['payment days','payment terms','net','terms']};
+function mapCSV(text){
+  const rows=parseCSV(text);if(rows.length<2)return null;
+  const hdr=rows[0].map(h=>h.trim().toLowerCase());const idx={};
+  Object.entries(COLMAP).forEach(([k,al])=>{const i=hdr.findIndex(h=>al.includes(h));if(i>=0)idx[k]=i});
+  if(idx.account==null&&idx.code==null)return{err:'Need at least an Account or Deal ID column.'};
+  const out=rows.slice(1).map(r=>{const g=k=>idx[k]!=null?(r[idx[k]]||'').trim():'';const cd=g('closeDate');const ts=cd?(/^\d{4}-\d{2}-\d{2}$/.test(cd)?fromIso(cd):Date.parse(cd)):null;
+    return{code:g('code'),account:g('account')||g('code'),rep:g('rep'),value:parseFloat(g('value').replace(/[$,]/g,''))||0,closeDate:isNaN(ts)?null:ts,discount:parseFloat(g('discount'))||0,payDays:parseInt(g('payDays').replace(/\D/g,''),10)||S().lanes.stdPay}}).filter(x=>x.account);
+  return{rows:out,cols:Object.keys(idx)};
 }
+function importHTML(){
+  const R=ui.importRows;
+  return head('Import','Bring deals in from CSV')+`<div class="dbody">
+    <p class="note" style="margin:0">Export a report from Salesforce or Excel as CSV. Recognized columns: Deal ID, Account, Rep/Owner, Amount/Value, Close Date, Discount, Payment days. Imported deals land in Intake with the clock not started, so you can finish their intake.</p>
+    <textarea class="input" id="csvTxt" style="min-height:140px" placeholder="Paste CSV here, including the header row"></textarea>
+    <div class="inline"><button class="btn sm" data-act="csvParse">Preview</button><label class="btn sm" style="cursor:pointer">Choose CSV file<input type="file" id="csvFile" accept=".csv,text/csv" hidden></label></div>
+    ${R?(R.err?`<div class="guard">${esc(R.err)}</div>`:`<div class="preview"><b>${R.rows.length} deals found</b><span class="note">Matched columns: ${R.cols.join(', ')}</span><ul>${R.rows.slice(0,6).map(x=>`<li><b>${esc(x.account)}</b> ${esc(x.rep)} · ${money(x.value)}${x.closeDate?` · close ${dshort(x.closeDate)}`:''}</li>`).join('')}${R.rows.length>6?`<li>…and ${R.rows.length-6} more</li>`:''}</ul><button class="btn primary" data-act="csvImport">Import ${R.rows.length} deals</button></div>`):''}
+  </div>`;
+}
+function csvOut(){
+  const q=v=>{const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const H=['Deal ID','Account','Rep','Lane','Value','Discount %','Payment days','Stage','Waiting on','SLA used %','Target close','Close risk','Cycle days','Approvals cleared','Approvals total','Exceptions','Bypasses','SLA misses','Escalations','Send-backs','Kicked back','Booked'];
+  const rows=state.deals.map(d=>{const c=closeRisk(d);return[d.code,d.account,d.rep,LANES[d.lane].l,d.value,d.discount,d.payDays,stageLabel(d),WHO[waiting(d)]||'',isBooked(d)?'':Math.round(ratio(d)*100),iso(d.closeDate),c?(c.t==='crit'?'Likely miss':c.t==='warn'?'Tight':'On track'):'',cycleDays(d)==null?'':cycleDays(d).toFixed(1),apprDone(d),d.approvals.length,d.exceptions.join('; '),d.overrides.length,d.misses.length,d.escal.length,d.sendbacks.length,d.kickback?'Yes':'No',iso(d.bookedAt)]});
+  return [H,...rows].map(r=>r.map(q).join(',')).join('\n');
+}
+
+/* ---------- Actions ---------- */
+function newDeal(o){
+  const t=now();const intake=o.intake||INTAKE.map(()=>false);const complete=intake.every(Boolean);
+  const d={id:uid(),code:o.code||nextCode(),account:o.account,rep:o.rep||'',value:o.value||0,discount:o.discount||0,payDays:o.payDays||S().lanes.stdPay,closeDate:o.closeDate||null,triggers:o.triggers||[],parallel:o.parallel??S().parallel,
+    approvals:buildApprovals(o.triggers||[]),intake,segs:[{stage:'intake',start:t,end:null}],waitLog:[{who:complete?'desk':'requestor',at:t}],exceptions:[],notes:o.notes||'',kickback:false,overrides:[],misses:[],escal:[],sendbacks:[],laneLog:[],closeout:CLOSEOUT.map(()=>false),
+    bookedAt:null,createdAt:t,clockStart:complete?t:null,ackAt:o.ack?t:null,laneAuto:true};
+  if(!d.triggers.includes('pricing')&&d.discount>S().lanes.fastDisc){d.triggers.push('pricing');d.approvals=buildApprovals(d.triggers)}
+  if(!d.triggers.includes('payment')&&d.payDays>S().lanes.stdPay){d.triggers.push('payment');d.approvals=buildApprovals(d.triggers)}
+  d.lane=autoLane(d);return d;
+}
+function relane(d,why){if(!d.laneAuto)return;const n=autoLane(d);if(n!==d.lane){d.laneLog.push({from:d.lane,to:n,reason:why||'Auto: deal terms changed',at:now()});d.lane=n}}
+function completeTrack(d,stage,o){
+  const t=now(),seg=openSegs(d).find(s=>s.stage===stage);if(!seg)return;
+  const oa=openAppr(d,stage);if(oa.length)d.overrides.push({stage,count:oa.length,reason:o.bypass,at:t,kind:'approvals'});
+  if(stage==='om'&&!d.closeout.every(Boolean))d.overrides.push({stage,count:d.closeout.filter(x=>!x).length,reason:o.closeout,at:t,kind:'closeout'});
+  const r=segRatio(d,seg);if(r>1)d.misses.push({stage,reason:o.miss,at:t,over:days(segActive(d,seg))-slaFor(d,stage)});
+  seg.end=t;if(stage==='intake'&&!d.ackAt)d.ackAt=t;
+  if(openSegs(d).length)return `${SMAP[stage].short} complete. Waiting on the other reviews.`;
+  const st=steps(d),i=st.findIndex(x=>x.includes(stage)),nx=st[i+1];
+  if(!nx||nx[0]==='booked'){d.segs.push({stage:'booked',start:t,end:t});d.bookedAt=t;return `${d.code} booked in ${f1(cycleDays(d))} days`}
+  nx.forEach(s=>d.segs.push({stage:s,start:t,end:null}));setWait(d,'reviewer',t);
+  return `${d.code} moved to ${nx.map(s=>SMAP[s].short).join(' + ')}`;
+}
+function syncAfterApprovalChange(d){
+  if(isBooked(d))return;const st=steps(d),i=curStepIdx(d),cur=st[i]||[];const t=now();
+  cur.forEach(s=>{if(!d.segs.some(g=>g.stage===s&&!g.end)&&!d.segs.some(g=>g.stage===s&&g.end&&g.start>=Math.min(...openSegs(d).map(x=>x.start))))d.segs.push({stage:s,start:t,end:null})});
+}
+function chaseText(d,stage){
+  const m=S().matrix[stage],s=openSegs(d).find(x=>x.stage===stage),oa=openAppr(d,stage);
+  const by=new Date(now()+DAY).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  return [`Subject: ${d.code} · ${SMAP[stage].dept} review needed · ${d.account}${d.closeDate?` · close ${dshort(d.closeDate)}`:''}`,'',
+    `Hi ${(m.approver||'team').split(' ')[0]},`,'',
+    `${d.code} (${d.account}, ${money(d.value)}) is in ${SMAP[stage].dept} review${s?`, ${f1(days(segActive(d,s)))} of ${f1(slaFor(d,stage))} SLA days`:''}. Open items:`,
+    ...(oa.length?oa.map(a=>`• ${a.label}`):['• Final confirmation']),
+    '',`${d.closeDate?`Target close is ${dshort(d.closeDate)}. `:''}Can you confirm by ${by}?${m.backup?` If you're out, I'll route to ${m.backup}.`:''}`,'',`Thanks,`,`${S().myName||'Deal Desk'}`].join('\n');
+}
+function sendBackText(d){const miss=INTAKE.filter((_,i)=>!d.intake[i]);return [`Subject: ${d.code} · a few items needed before review starts`,'',`Hi ${(d.rep||'there').split(' ')[0].replace('.','')},`,'',`Thanks for submitting ${d.code} (${d.account}). Before it goes to review, I need:`,...miss.map(x=>`• ${x[0]}: ${x[1]}`),'',`The review clock starts as soon as these are in.`,'','Thanks,',S().myName||'Deal Desk'].join('\n')}
+function proposalText(tag){const g=excGroups().find(x=>x.tag===tag);const bk=state.deals.filter(isBooked);const avg=a=>{const c=a.map(cycleDays).filter(x=>x!=null);return c.length?(c.reduce((s,x)=>s+x,0)/c.length).toFixed(1):'n/a'};const L=libFor(tag);
+  return `Proposal: make "${tag}" a pre-approved deal option\n\nWhat I'm seeing: "${tag}" came up on ${g.deals.length} deals (${g.deals.map(d=>d.code).join(', ')}). Each one needed its own approval round.\nImpact: booked deals with this exception averaged ${avg(g.deals.filter(isBooked))} days from request to booking, vs ${avg(bk)} days across all booked deals.\n${L?`Proposed guardrail: ${L.fallback||'(define)'}\nStill escalate when: ${L.escalate||'(define)'}\n`:''}Ask: agree on standard guardrails for "${tag}" so deals that fit them skip the manual review.\nOwner: ${S().myName||'Deal Desk'}, Deal Desk`}
+function download(name,text,type){try{const b=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}catch(e){toast('Download blocked. Use Copy CSV instead.')}}
+function restoreFrom(txt){try{const p=JSON.parse(txt);if(!p||!Array.isArray(p.deals)||!p.deals.every(d=>Array.isArray(d.segs)))throw 0;snap();state={deals:p.deals,library:p.library||[],settings:mergeSettings(p.settings)};closeDrawer();save();renderAll(true);toast(`Restored ${p.deals.length} deals`,true)}catch(e){toast("That isn't a valid v2 backup. Paste the full text from Copy backup.")}}
+
 const H={
-  tab:id=>{ui.tab=id;renderTabs();renderView(true)},
-  open:id=>openDrawer('deal',id),
-  new:()=>openDrawer('new'),
-  settings:()=>openDrawer('settings'),
-  close:()=>closeDrawer(),
-  advance:()=>{const d=byId(ui.id);const open=d.approvals.filter(a=>a.dept===d.stage&&!a.done);if(open.length){ui.guard=true;renderDrawer();setTimeout(()=>{const g=document.getElementById('guardReason');g&&g.focus()},30)}else doAdvance(d)},
-  guardGo:()=>{const r=(document.getElementById('guardReason').value||'').trim();if(!r){toast('Add a reason so the bypass is documented');return}doAdvance(byId(ui.id),r)},
-  guardCancel:()=>{ui.guard=false;renderDrawer()},
-  undo:()=>{const d=byId(ui.id);if(d.history.length<2)return;const last=d.history.pop();d.overrides=d.overrides.filter(o=>o.at!==last.at);d.waitLog=d.waitLog.filter(w=>w.at<last.at);d.stage=d.history[d.history.length-1].stage;if(last.stage==='booked'){d.bookedAt=null;d.kickback=false}commit(`Moved ${d.code} back to ${SMAP[d.stage].short}`)},
-  wait:who=>{const d=byId(ui.id);setWait(d,who);commit(`Waiting on ${WHO[who].toLowerCase()}`)},
-  appr:id=>{const d=byId(ui.id);const a=d.approvals.find(x=>x.id===id);a.done=!a.done;a.doneAt=a.done?now():null;commit(a.done?'Approval cleared':'Approval reopened')},
-  intake:i=>{const d=byId(ui.id);d.intake[i]=!d.intake[i];if(d.stage==='intake'&&d.intake.every(Boolean)&&waiting(d)==='requestor')setWait(d,'desk');commit()},
-  kick:()=>{const d=byId(ui.id);d.kickback=!d.kickback;commit(d.kickback?'Kickback logged':'Kickback cleared')},
-  excAdd:()=>{const v=(document.getElementById('excIn').value||'').trim();if(!v)return;const d=byId(ui.id);if(!d.exceptions.some(x=>x.toLowerCase()===v.toLowerCase()))d.exceptions.push(v);commit('Exception tagged');setTimeout(()=>{const e=document.getElementById('excIn');e&&e.focus()},20)},
-  excRemove:t=>{const d=byId(ui.id);d.exceptions=d.exceptions.filter(x=>x!==t);commit()},
-  addAppr:()=>{const l=(document.getElementById('newApprLabel').value||'').trim();if(!l){toast('Name the approval first');return}const d=byId(ui.id);d.approvals.push({id:uid(),dept:document.getElementById('newApprDept').value,label:l,done:false,doneAt:null});commit('Approval added')},
-  del:()=>{ui.confirmDel=true;renderDrawer()},delCancel:()=>{ui.confirmDel=false;renderDrawer()},
-  delGo:()=>{const d=byId(ui.id);state.deals=state.deals.filter(x=>x.id!==d.id);closeDrawer();commit(`${d.code} deleted`)},
-  sort:k=>{ui.sort=ui.sort.k===k?{k,dir:-ui.sort.dir}:{k,dir:['account','rep','code','stage','wait'].includes(k)?1:-1};renderView(false)},
-  statusF:s=>{ui.statusF=s;renderView(false)},
+  tab:id=>{ui.tab=id;renderTabs();renderView(true);window.scrollTo({top:0})},
+  open:id=>openDrawer('deal',id),new:()=>openDrawer('new'),settings:()=>openDrawer('settings'),import:()=>openDrawer('import'),close:()=>closeDrawer(),
+  undo:()=>undo(),
+  complete:stage=>{const d=byId(ui.id),s=openSegs(d).find(x=>x.stage===stage);if(!s)return;if(openAppr(d,stage).length||segRatio(d,s)>1||(stage==='om'&&!d.closeout.every(Boolean))){ui.guard=stage;ui._keepScroll=true;renderDrawer();setTimeout(()=>{const g=document.querySelector('#g-bypass,#g-closeout,#g-miss');g&&g.focus()},30);return}let m;act(null,()=>{m=completeTrack(d,stage,{})});ui.guard=null;toast(m,true);renderDrawer()},
+  guardGo:stage=>{const d=byId(ui.id),gv=id=>(document.getElementById(id)||{value:null}).value;const by=gv('g-bypass'),co=gv('g-closeout'),mi=gv('g-miss');
+    if(by!==null&&!by.trim()){toast('Add a reason so the bypass is documented');return}if(co!==null&&!co.trim()){toast('Add a reason for booking before close-out is done');return}if(mi!==null&&!mi){toast('Pick why the SLA was missed');return}
+    let m;ui.guard=null;act(null,()=>{m=completeTrack(d,stage,{bypass:by&&by.trim(),closeout:co&&co.trim(),miss:mi})});toast(m,true)},
+  guardCancel:()=>{ui.guard=null;ui._keepScroll=true;renderDrawer()},
+  unbook:()=>{const d=byId(ui.id);act(`${d.code} reopened at Order Mgmt`,()=>{d.segs=d.segs.filter(s=>s.stage!=='booked');const om=[...d.segs].reverse().find(s=>s.stage==='om');if(om)om.end=null;d.bookedAt=null;d.kickback=false})},
+  wait:who=>{const d=byId(ui.id);ui._keepScroll=true;act(`Waiting on ${WHO[who].toLowerCase()}`,()=>setWait(d,who))},
+  apSet:v=>{const[id,st]=v.split(':');const d=byId(ui.id),a=d.approvals.find(x=>x.id===id);ui._keepScroll=true;act(st==='yes'?'Approved':st==='yesif'?'Approved with conditions. Add the condition.':st==='no'?'Declined':'Reopened',()=>{a.status=st;a.at=st==='open'?null:now();if(st!=='open'&&!a.by)a.by=S().matrix[a.dept]?.approver||'';if(st==='yesif')ui.apOpen=a.id})},
+  apOpen:id=>{ui.apOpen=ui.apOpen===id?null:id;ui._keepScroll=true;renderDrawer()},
+  intake:i=>{const d=byId(ui.id);ui._keepScroll=true;act(null,()=>{d.intake[i]=!d.intake[i];if(d.intake.every(Boolean)){if(!d.clockStart)d.clockStart=now();if(waiting(d)==='requestor')setWait(d,'desk')}});if(d.intake.every(Boolean)&&d.clockStart&&now()-d.clockStart<2000)toast('Intake complete. Clock started.',true)},
+  closeout:i=>{const d=byId(ui.id);ui._keepScroll=true;act(null,()=>{d.closeout[i]=!d.closeout[i]})},
+  kick:()=>{const d=byId(ui.id);ui._keepScroll=true;act(null,()=>{d.kickback=!d.kickback});toast(d.kickback?'Kickback logged':'Kickback cleared',true)},
+  ack:()=>{const d=byId(ui.id);ui._keepScroll=true;act(`Acknowledged in ${f1((now()-d.createdAt)/HR)}h`,()=>{d.ackAt=now()})},
+  sendBack:()=>{const d=byId(ui.id);const txt=sendBackText(d);ui._keepScroll=true;act(null,()=>{d.sendbacks.push({at:now(),missing:INTAKE.filter((_,i)=>!d.intake[i]).map(x=>x[0])});setWait(d,'requestor');if(!d.ackAt)d.ackAt=now()});copy(txt,'Send-back message copied. Clock paused.')},
+  chase:stage=>copy(chaseText(byId(ui.id),stage),'Chase email copied'),
+  escToggle:()=>{ui.escOpen=!ui.escOpen;ui._keepScroll=true;renderDrawer()},
+  escCopy:()=>{const d=byId(ui.id);const txt=escPackageText(d);logEsc(d);copy(txt,'Escalation package copied and logged')},
+  escLog:()=>{logEsc(byId(ui.id));toast('Escalation logged',true)},
+  laneSet:l=>{const d=byId(ui.id);if(l===d.lane)return;ui.laneEdit=l;ui._keepScroll=true;renderDrawer();setTimeout(()=>{const x=document.getElementById('laneReason');x&&x.focus()},30)},
+  laneGo:()=>{const d=byId(ui.id),r=(document.getElementById('laneReason').value||'').trim();if(!r){toast('Add a reason for the lane change');return}const to=ui.laneEdit;ui.laneEdit=null;act(`Moved to ${LANES[to].l} lane`,()=>{d.laneLog.push({from:d.lane,to,reason:r,at:now()});d.lane=to;d.laneAuto=to===autoLane(d)})},
+  laneCancel:()=>{ui.laneEdit=null;ui._keepScroll=true;renderDrawer()},
+  parToggle:()=>{const d=byId(ui.id);ui._keepScroll=true;act(null,()=>{d.parallel=!d.parallel})},
+  parDefault:()=>{act(null,()=>{S().parallel=!S().parallel})},
+  excAdd:()=>{const v=(document.getElementById('excIn').value||'').trim();if(!v)return;const d=byId(ui.id);ui._keepScroll=true;act('Exception tagged',()=>{const L=libFor(v);const n=L?L.name:v;if(!d.exceptions.some(x=>x.toLowerCase()===n.toLowerCase()))d.exceptions.push(n)});setTimeout(()=>{const e=document.getElementById('excIn');e&&e.focus()},20)},
+  excRemove:t=>{const d=byId(ui.id);ui._keepScroll=true;act(null,()=>{d.exceptions=d.exceptions.filter(x=>x!==t)})},
+  addAppr:()=>{const l=(document.getElementById('newApprLabel').value||'').trim();if(!l){toast('Name the approval first');return}const d=byId(ui.id),dept=document.getElementById('newApprDept').value;ui._keepScroll=true;act('Approval added',()=>{d.approvals.push(newAp(dept,l));syncAfterApprovalChange(d)})},
+  del:()=>{ui.confirmDel=true;ui._keepScroll=true;renderDrawer()},delCancel:()=>{ui.confirmDel=false;ui._keepScroll=true;renderDrawer()},
+  delGo:()=>{const d=byId(ui.id);closeDrawer();act(`${d.code} deleted`,()=>{state.deals=state.deals.filter(x=>x.id!==d.id)})},
+  sort:k=>{ui.sort=ui.sort.k===k?{k,dir:-ui.sort.dir}:{k,dir:['account','rep','code','stage','wait','close','lane'].includes(k)?1:-1};renderView(false)},
+  statusF:s=>{ui.statusF=s;renderView(false)},laneF:l=>{ui.laneF=l;renderView(false)},
   period:p=>{ui.period=+p;renderView(true)},
+  standup:()=>copy(standupText(),'Stand-up note copied'),
   copyImpact:()=>copy(document.getElementById('report').textContent,'Summary copied',document.getElementById('report')),
-  proposal:tag=>{const g=excGroups().find(x=>x.tag===tag);const bk=state.deals.filter(d=>d.bookedAt);const avg=a=>a.length?(a.reduce((s,d)=>s+days(cycleMs(d)),0)/a.length).toFixed(1):'n/a';
-    const txt=`Proposal: make "${tag}" a pre-approved deal option\n\nWhat I'm seeing: "${tag}" came up on ${g.deals.length} deals (${g.deals.map(d=>d.code).join(', ')}). Each one needed its own approval round.\nImpact: booked deals with this exception averaged ${avg(g.deals.filter(d=>d.bookedAt))} days from request to booking, vs ${avg(bk)} days across all booked deals.\nAsk: agree on standard guardrails for "${tag}" so deals that fit them skip the manual review.\nOwner: Deal Desk`;
-    copy(txt,'Proposal copied. Paste it into an email or doc.')},
-  clearSample:()=>{state.deals=state.deals.filter(d=>!d.sample);state.sample=false;commit('Sample deals cleared',true)},
-  loadSample:()=>{state.deals=state.deals.filter(d=>!d.sample).concat(makeSample());commit('Sample deals loaded',true)},
+  proposal:tag=>copy(proposalText(tag),'Proposal copied. Paste it into an email or doc.'),
+  libNew:name=>{ui.libId=null;ui.libName=name||'';openDrawer('lib')},
+  libEdit:id=>{ui.libId=id;openDrawer('lib')},
+  libDel:id=>{closeDrawer();act('Play deleted',()=>{state.library=state.library.filter(x=>x.id!==id)})},
+  libCopy:id=>{const L=state.library.find(x=>x.id===id);copy(L.pushback||L.fallback||L.preferred||'','Pushback language copied')},
+  clearSample:()=>act('Sample deals cleared',()=>{state.deals=state.deals.filter(d=>!d.sample);state.library=state.library.filter(x=>!x.sample)},true),
+  loadSample:()=>act('Sample deals loaded',()=>{const s=makeSample();state.deals=state.deals.filter(d=>!d.sample).concat(s.deals);if(!state.library.length)state.library=s.library},true),
   backup:()=>copy(JSON.stringify(state),'Backup copied. Paste it somewhere safe.'),
   restore:()=>restoreFrom(document.getElementById('restoreTxt').value),
   clear:()=>{ui.confirmClear=true;renderDrawer()},clearCancel:()=>{ui.confirmClear=false;renderDrawer()},
-  clearGo:()=>{state.deals=[];state.sample=false;ui.confirmClear=false;commit('All deals removed',true)}
+  clearGo:()=>{ui.confirmClear=false;act('All deals removed',()=>{state.deals=[]},true)},
+  csvCopy:()=>copy(csvOut(),'CSV copied. Paste it into Excel or Sheets.'),
+  csvDl:()=>download(`deal-desk-${iso(now())}.csv`,csvOut(),'text/csv'),
+  csvParse:()=>{ui.importRows=mapCSV(document.getElementById('csvTxt').value)||{err:'No rows found. Include the header row.'};const t=document.getElementById('csvTxt').value;renderDrawer();document.getElementById('csvTxt').value=t},
+  csvImport:()=>{const R=ui.importRows;if(!R||!R.rows)return;closeDrawer();act(`Imported ${R.rows.length} deals into Intake`,()=>{R.rows.forEach(x=>{const d=newDeal({...x,code:x.code||nextCode()});state.deals.push(d)})},true);ui.tab='board';renderAll(true)}
 };
-function restoreFrom(txt){try{const p=JSON.parse(txt);if(!p||!Array.isArray(p.deals))throw 0;state={deals:p.deals,sla:{...SLA_DEFAULT,...(p.sla||{})},sample:!!p.sample};closeDrawer();commit(`Restored ${p.deals.length} deals`,true)}catch(e){toast("That isn't a valid backup. Paste the full text from Copy backup.")}}
+function logEsc(d){act(null,()=>{openSegs(d).forEach(s=>{const lv=escLevel(segRatio(d,s));if(lv)d.escal.push({stage:s.stage,level:lv,at:now()})})});ui._keepScroll=true;renderDrawer()}
 
-document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;const f=H[t.dataset.act];if(f){if(t.tagName==='BUTTON'||t.tagName==='TR'||t.id==='scrim')e.preventDefault();f(t.dataset.id)}});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t||t.disabled)return;const f=H[t.dataset.act];if(f){if(t.tagName==='BUTTON'||t.tagName==='TR'||t.id==='scrim')e.preventDefault();f(t.dataset.id)}});
 document.addEventListener('input',e=>{
-  if(e.target.id==='lq'){ui.q=e.target.value;document.getElementById('lbody').innerHTML=ledgerRows()}
-  else if(e.target.id==='notes'){const d=byId(ui.id);d.notes=e.target.value;save()}
+  const t=e.target;
+  if(t.id==='lq'){ui.q=t.value;document.getElementById('lbody').innerHTML=ledgerRows()}
+  else if(t.id==='notes'){const d=byId(ui.id);d.notes=t.value;save()}
+  else if(t.dataset.esc){const d=byId(ui.id);d.escData=d.escData||{};d.escData[t.dataset.esc]=t.value;save()}
+  else if(t.closest&&t.closest('#newform'))updatePreview();
 });
 document.addEventListener('change',e=>{
-  const t=e.target;
-  if(t.id==='lstage'){ui.stageF=t.value;document.getElementById('lbody').innerHTML=ledgerRows()}
-  else if(t.dataset&&t.dataset.sla){const v=parseFloat(t.value);if(v>0){state.sla[t.dataset.sla]=v;save();renderBanner();renderKPIs(false);renderTabs();renderView(false);toast(`${SMAP[t.dataset.sla].short} SLA set to ${v} days`)}}
-  else if(t.closest&&t.closest('#newform')){document.getElementById('preview').innerHTML=previewHTML()}
-  else if(t.id==='restoreFile'&&t.files[0]){const r=new FileReader();r.onload=()=>restoreFrom(r.result);r.readAsText(t.files[0])}
+  const t=e.target,ds=t.dataset||{};
+  if(t.id==='lstage'){ui.stageF=t.value;document.getElementById('lbody').innerHTML=ledgerRows();return}
+  if(t.closest&&t.closest('#newform')){
+    if(t.id==='f-disc'&&+t.value>S().lanes.fastDisc)document.getElementById('t-pricing').checked=true;
+    if(t.id==='f-pay'&&+t.value>S().lanes.stdPay)document.getElementById('t-payment').checked=true;
+    updatePreview();return}
+  if(ds.field){const d=byId(ui.id);const k=ds.field;ui._keepScroll=true;act(null,()=>{if(k==='closeDate')d.closeDate=fromIso(t.value);else d[k]=parseFloat(t.value)||0;if(k==='discount'&&d.discount>S().lanes.fastDisc&&!d.triggers.includes('pricing'))d.triggers.push('pricing');if(k==='payDays'&&d.payDays>S().lanes.stdPay&&!d.triggers.includes('payment'))d.triggers.push('payment');relane(d)});return}
+  if(ds.ap){const d=byId(ui.id),a=d.approvals.find(x=>x.id===ds.ap);ui._keepScroll=true;act(null,()=>{a[ds.k]=ds.k==='exp'?fromIso(t.value):t.value});return}
+  if(ds.mx){act(null,()=>{S().matrix[ds.mx][ds.k]=ds.k==='sla'?Math.max(.25,parseFloat(t.value)||1):t.value});return}
+  if(ds.ln){act('Lane rules updated',()=>{S().lanes[ds.ln]=parseFloat(t.value)||0;state.deals.filter(d=>!isBooked(d)).forEach(d=>relane(d,'Auto: lane rules changed'))});return}
+  if(ds.lm){act(null,()=>{S().lanes.mult[ds.lm]=Math.max(.1,parseFloat(t.value)||1)});return}
+  if(ds.st){act(null,()=>{S()[ds.st]=ds.st==='triageHrs'?Math.max(1,parseFloat(t.value)||4):t.value});return}
+  if(t.id==='restoreFile'&&t.files[0]){const r=new FileReader();r.onload=()=>restoreFrom(r.result);r.readAsText(t.files[0]);return}
+  if(t.id==='csvFile'&&t.files[0]){const r=new FileReader();r.onload=()=>{ui.importRows=mapCSV(String(r.result))||{err:'No rows found.'};renderDrawer()};r.readAsText(t.files[0])}
 });
 document.addEventListener('submit',e=>{
-  if(e.target.id!=='newform')return;e.preventDefault();
-  const g=id=>document.getElementById(id).value.trim();
-  const trs=[...document.querySelectorAll('#newform [name=trig]:checked')].map(x=>x.value);
-  const intake=INTAKE.map((_,i)=>document.getElementById('i-'+i).checked);
-  const t=now();
-  const d={id:uid(),code:g('f-code')||nextCode(),account:g('f-acct'),rep:g('f-rep'),value:parseFloat(g('f-val'))||0,triggers:trs,approvals:buildApprovals(trs),intake,history:[{stage:'intake',at:t}],waitLog:[{who:intake.every(Boolean)?'desk':'requestor',at:t}],exceptions:[],notes:g('f-notes'),kickback:false,overrides:[],bookedAt:null,createdAt:t,stage:'intake'};
-  state.deals.push(d);save();renderAll(false);openDrawer('deal',d.id);toast(`${d.code} created. Clock started.`);
+  e.preventDefault();
+  if(e.target.id==='newform'){
+    const g=id=>document.getElementById(id).value.trim();
+    const trs=[...document.querySelectorAll('#newform [name=trig]:checked')].map(x=>x.value);
+    const intake=INTAKE.map((_,i)=>document.getElementById('i-'+i).checked);
+    const d=newDeal({code:g('f-code'),account:g('f-acct'),rep:g('f-rep'),value:parseFloat(g('f-val'))||0,closeDate:fromIso(g('f-close')),discount:parseFloat(g('f-disc'))||0,payDays:parseInt(g('f-pay'),10)||S().lanes.stdPay,parallel:g('f-par')==='1',triggers:trs,intake,notes:g('f-notes'),ack:true});
+    act(`${d.code} created${d.clockStart?'. Clock started.':'. Clock starts when intake is complete.'}`,()=>state.deals.push(d));openDrawer('deal',d.id);
+  }else if(e.target.id==='libform'){
+    const g=id=>document.getElementById(id).value.trim();const name=g('lb-name');if(!name){toast('Name the exception');return}
+    act('Play saved',()=>{let L=ui.libId&&state.library.find(x=>x.id===ui.libId);if(!L){L={id:uid()};state.library.push(L)}Object.assign(L,{name,dept:g('lb-dept'),preferred:g('lb-pref'),fallback:g('lb-fb'),pushback:g('lb-push'),escalate:g('lb-esc'),standard:document.getElementById('lb-std').checked});delete L.sample});closeDrawer();
+  }
 });
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&ui.mode){closeDrawer();return}
-  if(e.key==='Enter'&&e.target.id==='excIn'){e.preventDefault();H.excAdd()}
-  if(e.key==='Enter'&&e.target.id==='newApprLabel'){e.preventDefault();H.addAppr()}
-  if(e.key==='Enter'&&e.target.id==='guardReason'){e.preventDefault();H.guardGo()}
+  const map={excIn:'excAdd',newApprLabel:'addAppr',laneReason:'laneGo'};
+  if(e.key==='Enter'&&map[e.target.id]){e.preventDefault();H[map[e.target.id]]();return}
+  if(e.key==='Enter'&&/^g-/.test(e.target.id)){e.preventDefault();H.guardGo(ui.guard);return}
   const typing=/INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
   if(typing||e.metaKey||e.ctrlKey||e.altKey)return;
-  if(e.key==='n'||e.key==='N'){e.preventDefault();openDrawer('new')}
-  const n=parseInt(e.key,10);if(n>=1&&n<=5&&!ui.mode)H.tab(TABS[n-1][0]);
+  if(e.key==='n'||e.key==='N'){e.preventDefault();openDrawer('new');return}
+  const n=parseInt(e.key,10);if(n>=1&&n<=TABS.length&&!ui.mode)H.tab(TABS[n-1][0]);
 });
-document.addEventListener('focusin',e=>{if(e.target.closest&&e.target.closest('#newform')&&!document.getElementById('preview').innerHTML)document.getElementById('preview').innerHTML=previewHTML()});
 
 /* ---------- Boot ---------- */
-load();
-document.getElementById('excs').innerHTML=COMMON_EXC.map(x=>`<option value="${esc(x)}">`).join('');
-document.getElementById('reps').innerHTML=[...new Set(state.deals.map(d=>d.rep).filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('');
+load();save();
 document.getElementById('today').textContent='Desk open · '+new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 renderAll(true);
-setInterval(()=>{if(!ui.mode){renderKPIs(false);if(ui.tab==='board'||ui.tab==='radar')renderView(false)}},60000);
-const obs=new MutationObserver(()=>{const p=document.getElementById('preview');if(p&&!p.innerHTML)p.innerHTML=previewHTML()});
-obs.observe(document.getElementById('drawer'),{childList:true});
+setInterval(()=>{if(!ui.mode){MED=null;renderKPIs(false);renderTabs();if(['today','board','radar'].includes(ui.tab))renderView(false)}},60000);
+if(!onClaude&&location.protocol.startsWith('http')){
+  try{const l=document.createElement('link');l.rel='manifest';l.href='manifest.webmanifest';document.head.appendChild(l);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
+}
+window.__ddcc={state:()=>state,H};
 })();
 </script>
