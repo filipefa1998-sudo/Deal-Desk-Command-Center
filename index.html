@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>Deal Desk Command Center</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#0A0F1D">
@@ -227,6 +232,7 @@ td.r,th.r{text-align:right}
 .drawer.on{transform:none}
 .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:calc(16px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) 14px 20px;border-bottom:1px solid var(--line)}
 .dhead h2{font-family:var(--f-display);font-stretch:72%;font-weight:800;font-size:26px;line-height:1.05;margin:2px 0 0;text-transform:uppercase;overflow-wrap:anywhere}
+.dbody>*{flex-shrink:0}
 .dbody{overflow-y:auto;padding:18px max(20px,env(safe-area-inset-right,0px)) calc(30px + env(safe-area-inset-bottom,0px)) 20px;display:flex;flex-direction:column;gap:18px}
 .x{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;width:36px;height:36px;flex:none;font-size:18px;line-height:1}
 .sec h4{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:500;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -345,6 +351,7 @@ legend{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transfo
 @media (max-width:760px){.grid,.grid3{grid-template-columns:minmax(0,1fr)}h1{font-size:20px}.live{display:none}.factgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .val{font-size:32px}.grid2{grid-template-columns:minmax(0,1fr)}.sbar,.axis{grid-template-columns:84px minmax(0,1fr) 54px}.legend .big{font-size:22px}.topact .btn.ghost .lbl{display:none}.apf{grid-template-columns:minmax(0,1fr)}}
 </style>
+</head><body>
 
 <header class="top">
   <div class="wrap topin">
@@ -565,7 +572,9 @@ function makeSample(){
     const booked=target==='booked';
     let ti=booked?st.length-1:st.findIndex(x=>target==='par'?x.length>1:x.includes(target));
     if(ti<0)ti=0;
-    const lag=booked?(1+r()*110)*DAY:0;
+    const prevQE=qEndsPast(2)[1];
+    let lag=booked?(1+r()*110)*DAY:0;
+    if(booked&&(i===1||i===5||i===8))lag=Math.max(DAY,t0-(prevQE-(1+r()*11)*DAY));
     const bookAt=t0-lag;
     const qe=booked&&isQE(bookAt)?1.55:1;
     const durs=st.slice(0,ti).map(x=>{const o={};x.forEach(s=>o[s]=base[s]*mult[d.lane]*qe*(.45+r()*1.4)*DAY);return o});
@@ -1365,3 +1374,5 @@ if(!onClaude&&location.protocol.startsWith('http')){
 window.__ddcc={state:()=>state,H};
 })();
 </script>
+
+</body></html>
